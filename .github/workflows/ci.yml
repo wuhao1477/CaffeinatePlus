@@ -1,0 +1,89 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  DEVELOPER_DIR: /Applications/Xcode_15.0.app/Contents/Developer
+
+jobs:
+  lint:
+    name: SwiftLint
+    runs-on: macos-13
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: SwiftLint
+        run: |
+          brew install swiftlint
+          swiftlint --strict
+
+  build:
+    name: Build and Test
+    runs-on: macos-13
+    strategy:
+      matrix:
+        configuration: [Debug, Release]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: Show Swift version
+        run: swift --version
+
+      - name: Resolve Dependencies
+        run: swift package resolve
+
+      - name: Build (${{ matrix.configuration }})
+        run: swift build -c ${{ matrix.configuration }}
+
+      - name: Run Tests
+        run: swift test --enable-code-coverage
+
+      - name: Generate Coverage Report
+        if: matrix.configuration == 'Debug'
+        run: |
+          xcrun llvm-cov export \
+            .build/debug/CaffeinatePlusPackageTests.xctest/Contents/MacOS/CaffeinatePlusPackageTests \
+            -instr-profile .build/debug/codecov/default.profdata \
+            -format="lcov" > coverage.lcov
+
+      - name: Upload Coverage
+        if: matrix.configuration == 'Debug'
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./coverage.lcov
+          fail_ci_if_error: false
+
+  analyze:
+    name: Static Analysis
+    runs-on: macos-13
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Swift Format Check
+        run: |
+          brew install swift-format
+          swift-format lint -r Sources/
+
+      - name: Security Scan
+        run: |
+          # Add security scanning tools here
+          echo "Security scan placeholder"
+
+  docs:
+    name: Documentation
+    runs-on: macos-13
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check Documentation
+        run: |
+          # Check if all public APIs are documented
+          echo "Documentation check placeholder"

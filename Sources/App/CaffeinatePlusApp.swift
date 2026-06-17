@@ -1,0 +1,40 @@
+// CaffeinatePlusApp.swift
+// 应用主入口
+// @main 标记
+
+import SwiftUI
+
+@main
+struct CaffeinatePlusApp: App {
+
+    // MARK: - State Objects
+
+    @StateObject private var appState = AppState()
+
+    // MARK: - Scene
+
+    var body: some Scene {
+        // 菜单栏应用
+        MenuBarExtra {
+            PopoverView()
+                .environmentObject(appState)
+        } label: {
+            // 菜单栏图标
+            Label {
+                Text("Caffeinate+")
+            } icon: {
+                Image(systemName: appState.isActive ? "bolt.fill" : "bolt")
+                    .symbolRenderingMode(.hierarchical)
+            }
+        }
+        .menuBarExtraStyle(.window)
+
+        // 设置窗口（可选）
+        #if DEBUG
+        Settings {
+            SettingsTabView()
+                .environmentObject(appState)
+        }
+        #endif
+    }
+}
