@@ -193,8 +193,8 @@ class AudioService: ObservableObject {
 
     /// 获取设备名称
     private func getDeviceName(_ deviceID: AudioDeviceID) -> String? {
-        var name: CFString = "" as CFString
-        var size = UInt32(MemoryLayout<CFString>.size)
+        var unmanagedName: Unmanaged<CFString>?
+        var size = UInt32(MemoryLayout<Unmanaged<CFString>?>.size)
 
         var address = AudioObjectPropertyAddress(
             mSelector: kAudioObjectPropertyName,
@@ -208,11 +208,11 @@ class AudioService: ObservableObject {
             0,
             nil,
             &size,
-            &name
+            &unmanagedName
         )
 
         guard status == noErr else { return nil }
-        return name as String
+        return unmanagedName?.takeUnretainedValue() as String?
     }
 
     // MARK: - Aggregate Device
@@ -262,8 +262,8 @@ class AudioService: ObservableObject {
 
     /// 获取设备 UID
     private func getDeviceUID(_ deviceID: AudioDeviceID) -> String? {
-        var uid: CFString = "" as CFString
-        var size = UInt32(MemoryLayout<CFString>.size)
+        var unmanagedUID: Unmanaged<CFString>?
+        var size = UInt32(MemoryLayout<Unmanaged<CFString>?>.size)
 
         var address = AudioObjectPropertyAddress(
             mSelector: kAudioDevicePropertyDeviceUID,
@@ -277,11 +277,11 @@ class AudioService: ObservableObject {
             0,
             nil,
             &size,
-            &uid
+            &unmanagedUID
         )
 
         guard status == noErr else { return nil }
-        return uid as String
+        return unmanagedUID?.takeUnretainedValue() as String?
     }
 
     // MARK: - Cleanup
