@@ -15,8 +15,6 @@ class SystemMonitorService: ObservableObject {
     @Published private(set) var memoryTotal: UInt64 = 0
     @Published private(set) var diskUsed: UInt64 = 0
     @Published private(set) var diskTotal: UInt64 = 0
-    @Published private(set) var diskReadRate: UInt64 = 0
-    @Published private(set) var diskWriteRate: UInt64 = 0
     @Published private(set) var batteryLevel: Int = 0
     @Published private(set) var isCharging: Bool = false
     @Published private(set) var systemUptime: TimeInterval = 0
@@ -191,13 +189,6 @@ class SystemMonitorService: ObservableObject {
         } catch {
             Logger.shared.error("Failed to get disk info: \(error)")
         }
-
-        refreshDiskIORates()
-    }
-
-    private func refreshDiskIORates() {
-        diskReadRate = 0
-        diskWriteRate = 0
     }
 
     /// 刷新电池信息

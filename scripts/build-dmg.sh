@@ -28,6 +28,10 @@ cd "$ROOT_DIR"
 swift build -c release --scratch-path "$SCRATCH_DIR"
 bin_dir="$(swift build -c release --scratch-path "$SCRATCH_DIR" --show-bin-path)"
 cp "$bin_dir/$EXECUTABLE_NAME" "$APP_BUNDLE/Contents/MacOS/$EXECUTABLE_NAME"
+if [[ -d "$bin_dir/${EXECUTABLE_NAME}_${EXECUTABLE_NAME}.bundle" ]]; then
+  cp -R "$bin_dir/${EXECUTABLE_NAME}_${EXECUTABLE_NAME}.bundle" \
+    "$APP_BUNDLE/Contents/Resources/"
+fi
 
 cat > "$APP_BUNDLE/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>

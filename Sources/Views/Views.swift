@@ -7,7 +7,7 @@ import SwiftUI
 
 struct PopoverView: View {
     @EnvironmentObject var appState: AppState
-    @State private var selectedTab: PopoverTab = .display
+    @State private var selectedTab: PopoverTab = .awake
 
     var body: some View {
         VStack(spacing: 0) {
@@ -63,7 +63,7 @@ struct PopoverHeaderView: View {
                 Circle()
                     .fill(appState.isActive ? Color.green : Color.orange)
                     .frame(width: 8, height: 8)
-                Text(appState.isActive ? "Active" : "Idle")
+                Text(appState.isActive ? "active" : "idle", bundle: .module)
                     .font(.system(size: 13, weight: .regular))
                     .foregroundColor(.secondary)
             }
@@ -83,7 +83,7 @@ struct PopoverFooterView: View {
             HStack(spacing: 6) {
                 Image(systemName: "clock")
                     .font(.system(size: 11))
-                Text("Open Source")
+                Text("open_source", bundle: .module)
                     .font(.system(size: 12, weight: .regular))
             }
             .foregroundColor(.orange)
@@ -95,7 +95,7 @@ struct PopoverFooterView: View {
             }) {
                 HStack(spacing: 5) {
                     Image(systemName: "power")
-                    Text("Quit")
+                    Text("quit", bundle: .module)
                 }
                 .font(.system(size: 12, weight: .semibold))
                 .foregroundColor(.secondary)
@@ -131,6 +131,8 @@ struct PopoverTabBar: View {
 // MARK: - PopoverTabButton
 
 struct PopoverTabButton: View {
+    @EnvironmentObject var appState: AppState
+
     let tab: PopoverTab
     let isSelected: Bool
     let action: () -> Void
@@ -141,7 +143,7 @@ struct PopoverTabButton: View {
                 Image(systemName: tab.icon)
                     .font(.system(size: 23, weight: .regular))
 
-                Text(tab.title)
+                Text(LocalizedStringKey(tab.titleKey), bundle: .module)
                     .font(.system(size: 11, weight: .regular))
             }
             .frame(maxWidth: .infinity)
@@ -165,13 +167,13 @@ enum PopoverTab: String, CaseIterable, Hashable {
     case monitor = "monitor"
     case settings = "settings"
 
-    var title: String {
+    var titleKey: String {
         switch self {
-        case .awake: return "Awake"
-        case .display: return "Display"
-        case .audio: return "Audio"
-        case .monitor: return "Monitor"
-        case .settings: return "Settings"
+        case .awake: return "prevent_sleep"
+        case .display: return "display"
+        case .audio: return "audio"
+        case .monitor: return "monitor"
+        case .settings: return "settings"
         }
     }
 
@@ -194,6 +196,12 @@ struct AwakeTabView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 16) {
+                if let message = appState.lastErrorMessage {
+                    ErrorBanner(message: message) {
+                        appState.lastErrorMessage = nil
+                    }
+                }
+
                 // 许可证过期横幅
                 // 开源版本：移除授权横幅
 
@@ -217,9 +225,9 @@ struct AwakeTabView: View {
                     .frame(width: 60, height: 60)
 
                 VStack(alignment: .leading) {
-                    Text("Prevent Sleep")
+                    Text("prevent_sleep", bundle: .module)
                         .font(.headline)
-                    Text(appState.isActive ? "Active" : "Inactive")
+                    Text(appState.isActive ? "active" : "inactive", bundle: .module)
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                 }
@@ -240,12 +248,18 @@ struct AwakeTabView: View {
 
     private var optionsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Options")
+            Text("options", bundle: .module)
                 .font(.headline)
 
-            Toggle("Prevent Display Sleep", isOn: $appState.restoreLastConfig)
-            Toggle("Prevent System Sleep", isOn: $appState.restoreLastConfig)
-            Toggle("Auto-activate on Launch", isOn: $appState.autoActivateOnLaunch)
+            Toggle(NSLocalizedString("prevent_display_sleep", bundle: .module, comment: ""), isOn: Binding(
+                get: { appState.sleepService.preventDisplaySleep },
+                set: { appState.setPreventDisplaySleep($0) }
+            ))
+            Toggle(NSLocalizedString("prevent_system_sleep", bundle: .module, comment: ""), isOn: Binding(
+                get: { appState.sleepService.preventSystemSleep },
+                set: { appState.setPreventSystemSleep($0) }
+            ))
+            Toggle(NSLocalizedString("auto_activate_launch", bundle: .module, comment: ""), isOn: $appState.autoActivateOnLaunch)
         }
         .padding()
         .background(Color(NSColor.controlBackgroundColor))
@@ -261,6 +275,12 @@ struct DisplayTabView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
+                if let message = appState.lastErrorMessage {
+                    ErrorBanner(message: message) {
+                        appState.lastErrorMessage = nil
+                    }
+                }
+
                 emptyStateView
                 createDisplaySection
                 quickPresetsSection
@@ -279,11 +299,11 @@ struct DisplayTabView: View {
                 .frame(width: 54)
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(appState.virtualDisplayService.isActive ? "Virtual Display Active" : "No Virtual Display")
+                Text(appState.localized(appState.virtualDisplayService.isActive ? "virtual_display_active" : "no_virtual_display"))
                     .font(.system(size: 15, weight: .bold))
                     .foregroundColor(.primary)
 
-                Text(appState.virtualDisplayService.isActive ? "Extending your desktop" : "Extends to the right of your main display")
+                Text(appState.localized(appState.virtualDisplayService.isActive ? "extending_desktop" : "extends_right"))
                     .font(.system(size: 12, weight: .regular))
                     .foregroundColor(.secondary)
                     .lineLimit(2)
@@ -295,12 +315,12 @@ struct DisplayTabView: View {
 
     private var createDisplaySection: some View {
         VStack(alignment: .leading, spacing: 20) {
-            Text("Create Virtual Display")
+            Text(appState.localized("create_virtual_display"))
                 .font(.system(size: 13, weight: .bold))
                 .foregroundColor(.secondary)
 
             VStack(spacing: 0) {
-                optionRow(title: "Resolution") {
+                optionRow(title: appState.localized("resolution")) {
                     Picker("", selection: Binding(
                         get: { selectedPresetIndex },
                         set: { appState.displayConfig = DisplayConfig.presets[$0] }
@@ -315,7 +335,7 @@ struct DisplayTabView: View {
 
                 Divider().padding(.leading, 46)
 
-                optionRow(title: "Refresh Rate") {
+                optionRow(title: appState.localized("refresh_rate")) {
                     Picker("", selection: Binding(
                         get: { Int(appState.displayConfig.refreshRate) },
                         set: { refreshRate in
@@ -333,7 +353,7 @@ struct DisplayTabView: View {
 
                 Divider().padding(.leading, 46)
 
-                optionRow(title: "HiDPI (Retina)") {
+                optionRow(title: appState.localized("hidpi")) {
                     Toggle("", isOn: Binding(
                         get: { appState.displayConfig.hiDPI },
                         set: { enabled in
@@ -351,7 +371,7 @@ struct DisplayTabView: View {
                 HStack(spacing: 12) {
                     Image(systemName: appState.virtualDisplayService.isActive ? "minus.circle.fill" : "plus.circle.fill")
                         .font(.system(size: 13, weight: .semibold))
-                    Text(appState.virtualDisplayService.isActive ? "Remove Virtual Display" : "Create Virtual Display")
+                    Text(appState.localized(appState.virtualDisplayService.isActive ? "remove_virtual_display" : "create_virtual_display"))
                         .font(.system(size: 14, weight: .bold))
                 }
                 .foregroundColor(.white)
@@ -366,7 +386,7 @@ struct DisplayTabView: View {
 
     private var quickPresetsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Quick Presets")
+            Text(appState.localized("quick_presets"))
                 .font(.system(size: 13, weight: .bold))
                 .foregroundColor(.secondary)
 
@@ -416,7 +436,11 @@ struct DisplayTabView: View {
         if appState.virtualDisplayService.isActive {
             appState.virtualDisplayService.removeDisplay()
         } else {
-            try? appState.virtualDisplayService.createDisplay(config: appState.displayConfig)
+            do {
+                try appState.virtualDisplayService.createDisplay(config: appState.displayConfig)
+            } catch {
+                appState.lastErrorMessage = error.localizedDescription
+            }
         }
     }
 
@@ -434,7 +458,7 @@ struct AudioTabView: View {
                 driverWarningCard
 
                 if !appState.audioService.isDriverInstalled {
-                    Text("Install BlackHole 2ch (free, open-source) to enable audio routing.")
+                    Text(appState.localized("install_blackhole_body"))
                         .font(.system(size: 13, weight: .regular))
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
@@ -443,7 +467,7 @@ struct AudioTabView: View {
                         HStack(spacing: 12) {
                             Image(systemName: "arrow.down.circle.fill")
                                 .font(.system(size: 13, weight: .semibold))
-                            Text("Install BlackHole")
+                            Text(appState.localized("install_blackhole"))
                                 .font(.system(size: 14, weight: .bold))
                         }
                         .foregroundColor(.white)
@@ -458,7 +482,7 @@ struct AudioTabView: View {
                         HStack(spacing: 8) {
                             Image(systemName: "arrow.clockwise")
                                 .font(.system(size: 13))
-                            Text("Refresh Detection")
+                            Text(appState.localized("refresh_detection"))
                                 .font(.system(size: 13, weight: .regular))
                         }
                         .foregroundColor(.blue)
@@ -474,12 +498,12 @@ struct AudioTabView: View {
 
     private var routingDiagram: some View {
         VStack(alignment: .leading, spacing: 18) {
-            Text("Audio Flow")
+            Text(appState.localized("audio_flow"))
                 .font(.system(size: 13, weight: .bold))
                 .foregroundColor(.secondary)
 
             VStack(spacing: 9) {
-                audioFlowPill(icon: "app.fill", title: "App Audio", color: .blue, background: Color.blue.opacity(0.08))
+                audioFlowPill(icon: "app.fill", title: appState.localized("app_audio"), color: .blue, background: Color.blue.opacity(0.08))
 
                 Image(systemName: "arrow.down")
                     .font(.system(size: 15))
@@ -492,8 +516,8 @@ struct AudioTabView: View {
                         Image(systemName: "arrow.down")
                             .font(.system(size: 15))
                             .foregroundColor(.secondary)
-                        audioFlowPill(icon: "speaker.wave.2", title: "Speaker", color: .green, background: Color.green.opacity(0.09))
-                        Text("You hear")
+                        audioFlowPill(icon: "speaker.wave.2", title: appState.localized("speaker"), color: .green, background: Color.green.opacity(0.09))
+                        Text(appState.localized("you_hear"))
                             .font(.system(size: 12))
                             .foregroundColor(.secondary)
                     }
@@ -503,7 +527,7 @@ struct AudioTabView: View {
                             .font(.system(size: 15))
                             .foregroundColor(.secondary)
                         audioFlowPill(icon: "waveform", title: "BlackHole", color: .orange, background: Color.orange.opacity(0.09))
-                        Text("Virtual mic")
+                        Text(appState.localized("virtual_mic"))
                             .font(.system(size: 12))
                             .foregroundColor(.secondary)
                     }
@@ -519,12 +543,12 @@ struct AudioTabView: View {
                 Image(systemName: "exclamationmark.triangle.fill")
                     .font(.system(size: 16))
                     .foregroundColor(.orange)
-                Text("Audio Driver Required")
+                Text(appState.localized("audio_driver_required"))
                     .font(.system(size: 15, weight: .bold))
                     .foregroundColor(.orange)
             }
 
-            Text("BlackHole virtual audio driver is required to route system audio to capture apps like OBS or Zoom.")
+            Text(appState.localized("blackhole_required_body"))
                 .font(.system(size: 12, weight: .regular))
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
@@ -583,20 +607,20 @@ struct MonitorTabView: View {
 
     private var systemInfoSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            sectionTitle("System Info")
+            sectionTitle(appState.localized("system_info"))
 
             VStack(spacing: 0) {
-                monitorInfoRow(icon: "clock", color: .blue, title: "System Uptime", value: formatUptimeLong(appState.systemMonitorService.systemUptime))
+                monitorInfoRow(icon: "clock", color: .blue, title: appState.localized("system_uptime"), value: formatUptimeLong(appState.systemMonitorService.systemUptime))
                 Divider().padding(.leading, 42)
-                monitorInfoRow(icon: "display", color: .cyan, title: "Connected Displays", value: "\(appState.systemMonitorService.connectedDisplays)")
+                monitorInfoRow(icon: "display", color: .cyan, title: appState.localized("connected_displays"), value: "\(appState.systemMonitorService.connectedDisplays)")
                 Divider().padding(.leading, 42)
-                monitorInfoRow(icon: "thermometer", color: .green, title: "Thermal State", value: thermalStateText(appState.systemMonitorService.thermalState), valueColor: .green)
+                monitorInfoRow(icon: "thermometer", color: .green, title: appState.localized("thermal_state"), value: thermalStateText(appState.systemMonitorService.thermalState), valueColor: .green)
                 Divider().padding(.leading, 42)
                 monitorInfoRow(
                     icon: "battery.100",
                     color: .green,
-                    title: "Battery",
-                    value: "\(appState.systemMonitorService.batteryLevel)% (\(appState.systemMonitorService.isCharging ? "Charging" : "On Battery"))",
+                    title: appState.localized("battery"),
+                    value: "\(appState.systemMonitorService.batteryLevel)% (\(appState.localized(appState.systemMonitorService.isCharging ? "charging" : "on_battery")))",
                     valueColor: .green
                 )
             }
@@ -605,12 +629,12 @@ struct MonitorTabView: View {
 
     private var resourceUsageSection: some View {
         VStack(alignment: .leading, spacing: 14) {
-            sectionTitle("Resource Usage")
+            sectionTitle(appState.localized("resource_usage"))
 
             VStack(spacing: 13) {
                 resourceRow(
                     icon: "cpu",
-                    title: "CPU",
+                    title: appState.localized("cpu"),
                     valueText: String(format: "%.1f%%", appState.systemMonitorService.cpuUsage),
                     percent: appState.systemMonitorService.cpuUsage,
                     color: .green
@@ -618,7 +642,7 @@ struct MonitorTabView: View {
 
                 resourceRow(
                     icon: "memorychip",
-                    title: "Memory",
+                    title: appState.localized("memory"),
                     valueText: capacityText(used: appState.systemMonitorService.memoryUsed, total: appState.systemMonitorService.memoryTotal, fractionDigits: 2),
                     percent: percent(used: appState.systemMonitorService.memoryUsed, total: appState.systemMonitorService.memoryTotal),
                     color: .orange
@@ -626,32 +650,27 @@ struct MonitorTabView: View {
 
                 resourceRow(
                     icon: "internaldrive",
-                    title: "Disk",
+                    title: appState.localized("disk"),
                     valueText: capacityText(used: appState.systemMonitorService.diskUsed, total: appState.systemMonitorService.diskTotal, fractionDigits: 0),
                     percent: percent(used: appState.systemMonitorService.diskUsed, total: appState.systemMonitorService.diskTotal),
                     color: .orange
                 )
-            }
-
-            HStack(spacing: 28) {
-                ioRateView(icon: "arrow.down.circle", color: .green, label: "R:", value: formatRate(appState.systemMonitorService.diskReadRate))
-                ioRateView(icon: "arrow.up.circle", color: .orange, label: "W:", value: formatRate(appState.systemMonitorService.diskWriteRate))
             }
         }
     }
 
     private var quickActionsSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            sectionTitle("Quick Actions")
+            sectionTitle(appState.localized("quick_actions"))
 
             HStack(spacing: 32) {
-                quickAction(icon: "arrow.clockwise", label: "Refresh") {
+                quickAction(icon: "arrow.clockwise", label: appState.localized("refresh")) {
                     appState.systemMonitorService.refresh()
                 }
-                quickAction(icon: "chart.bar", label: "Activity") {
+                quickAction(icon: "chart.bar", label: appState.localized("activity")) {
                     NSWorkspace.shared.open(URL(fileURLWithPath: "/System/Applications/Utilities/Activity Monitor.app"))
                 }
-                quickAction(icon: "info.circle", label: "System Info") {
+                quickAction(icon: "info.circle", label: appState.localized("system_info")) {
                     NSWorkspace.shared.open(URL(fileURLWithPath: "/System/Applications/Utilities/System Information.app"))
                 }
             }
@@ -707,19 +726,6 @@ struct MonitorTabView: View {
         }
     }
 
-    private func ioRateView(icon: String, color: Color, label: String, value: String) -> some View {
-        HStack(spacing: 5) {
-            Image(systemName: icon)
-                .font(.system(size: 12))
-                .foregroundColor(color)
-            Text(label)
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundColor(.secondary)
-            Text(value)
-                .font(.system(size: 12, weight: .semibold))
-        }
-    }
-
     private func quickAction(icon: String, label: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             VStack(spacing: 7) {
@@ -744,11 +750,11 @@ struct MonitorTabView: View {
 
     private func thermalStateText(_ state: ProcessInfo.ThermalState) -> String {
         switch state {
-        case .nominal: return "Normal"
-        case .fair: return "Fair"
-        case .serious: return "Serious"
-        case .critical: return "Critical"
-        @unknown default: return "Unknown"
+        case .nominal: return appState.localized("normal")
+        case .fair: return appState.localized("fair")
+        case .serious: return appState.localized("serious")
+        case .critical: return appState.localized("critical")
+        @unknown default: return appState.localized("unknown")
         }
     }
 
@@ -758,22 +764,13 @@ struct MonitorTabView: View {
     }
 
     private func capacityText(used: UInt64, total: UInt64, fractionDigits: Int) -> String {
-        guard total > 0 else { return "Unavailable" }
+        guard total > 0 else { return appState.localized("unavailable") }
         let divisor = 1_073_741_824.0
         let usedGB = Double(used) / divisor
         let totalGB = Double(total) / divisor
         return String(format: "%.*f GB / %.*f GB", fractionDigits, usedGB, fractionDigits, totalGB)
     }
 
-    private func formatRate(_ bytesPerSecond: UInt64) -> String {
-        if bytesPerSecond < 1_024 {
-            return "\(bytesPerSecond) B/s"
-        }
-        if bytesPerSecond < 1_048_576 {
-            return String(format: "%.1f KB/s", Double(bytesPerSecond) / 1_024)
-        }
-        return String(format: "%.1f MB/s", Double(bytesPerSecond) / 1_048_576)
-    }
 }
 
 // MARK: - SettingsTabView
@@ -785,6 +782,7 @@ struct SettingsTabView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
                 generalSettings
+                appearanceSettings
                 aboutSection
             }
             .padding(.horizontal, 20)
@@ -795,15 +793,15 @@ struct SettingsTabView: View {
 
     private var generalSettings: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("General")
+            Text("general", bundle: .module)
                 .font(.system(size: 13, weight: .bold))
                 .foregroundColor(.secondary)
 
             VStack(spacing: 0) {
                 settingRow(
                     icon: "arrow.right.circle",
-                    title: "Launch at Login",
-                    subtitle: "Start automatically on login",
+                    title: appState.localized("launch_at_login"),
+                    subtitle: appState.localized("launch_at_login_subtitle"),
                     isOn: Binding(
                         get: { appState.launchAtLoginEnabled },
                         set: { _ in
@@ -817,58 +815,110 @@ struct SettingsTabView: View {
 
                 settingRow(
                     icon: "arrow.counterclockwise",
-                    title: "Restore Last Config",
-                    subtitle: "Resume previous state on launch",
+                    title: appState.localized("restore_last_config"),
+                    subtitle: appState.localized("restore_last_config_subtitle"),
                     isOn: $appState.restoreLastConfig
                 )
                 Divider().padding(.leading, 46)
 
                 settingRow(
                     icon: "keyboard",
-                    title: "Global Hotkey",
-                    subtitle: "Cmd+Shift+C to toggle",
-                    isOn: $appState.hotkeyEnabled
+                    title: appState.localized("global_hotkey"),
+                    subtitle: appState.localized("global_hotkey_subtitle"),
+                    isOn: Binding(
+                        get: { appState.hotkeyEnabled },
+                        set: { appState.setHotkeyEnabled($0) }
+                    )
                 )
                 Divider().padding(.leading, 46)
 
                 settingRow(
                     icon: "bell",
-                    title: "Notifications",
-                    subtitle: "Status change alerts",
-                    isOn: $appState.notificationsEnabled
+                    title: appState.localized("notifications"),
+                    subtitle: appState.localized("notifications_subtitle"),
+                    isOn: Binding(
+                        get: { appState.notificationsEnabled },
+                        set: { appState.setNotificationsEnabled($0) }
+                    )
                 )
                 Divider().padding(.leading, 46)
 
                 settingRow(
                     icon: "rectangle.dock",
-                    title: "Show in Dock",
-                    subtitle: "Display app icon in Dock",
-                    isOn: $appState.showInDock
+                    title: appState.localized("show_in_dock"),
+                    subtitle: appState.localized("show_in_dock_subtitle"),
+                    isOn: Binding(
+                        get: { appState.showInDock },
+                        set: { appState.setShowInDock($0) }
+                    )
                 )
                 Divider().padding(.leading, 46)
 
                 settingRow(
                     icon: "bolt.circle",
-                    title: "Auto Activate on Launch",
-                    subtitle: "Activate all features after reboot",
+                    title: appState.localized("auto_activate_launch"),
+                    subtitle: appState.localized("auto_activate_launch_subtitle"),
                     isOn: $appState.autoActivateOnLaunch
                 )
             }
         }
     }
 
+    private var appearanceSettings: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("appearance", bundle: .module)
+                .font(.system(size: 13, weight: .bold))
+                .foregroundColor(.secondary)
+
+            VStack(spacing: 0) {
+                pickerRow(icon: "globe", title: appState.localized("language")) {
+                    Picker("", selection: Binding(
+                        get: { appState.language },
+                        set: { appState.setLanguage($0) }
+                    )) {
+                        ForEach(AppLanguage.allCases, id: \.self) { language in
+                            Text(LocalizedStringKey(language.titleKey), bundle: .module)
+                                .tag(language)
+                        }
+                    }
+                    .labelsHidden()
+                    .frame(width: 145)
+                }
+
+                Text("language_restart_hint", bundle: .module)
+                    .font(.system(size: 11))
+                    .foregroundColor(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.leading, 42)
+                    .padding(.bottom, 8)
+
+                Divider().padding(.leading, 46)
+
+                pickerRow(icon: "circle.lefthalf.filled", title: appState.localized("theme")) {
+                    Picker("", selection: $appState.theme) {
+                        Text("system", bundle: .module).tag(AppTheme.system)
+                        Text("light", bundle: .module).tag(AppTheme.light)
+                        Text("dark", bundle: .module).tag(AppTheme.dark)
+                    }
+                    .labelsHidden()
+                    .frame(width: 145)
+                }
+            }
+        }
+    }
+
     private var aboutSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("About")
+            Text("about", bundle: .module)
                 .font(.system(size: 13, weight: .bold))
                 .foregroundColor(.secondary)
 
             VStack(spacing: 0) {
                 aboutRow(title: "CaffeinatePlus", value: "v2.0.0")
                 Divider().padding(.leading, 46)
-                aboutRow(title: "License", value: appState.licenseService.state.displayText, valueColor: .green)
+                aboutRow(title: appState.localized("license"), value: appState.licenseService.state.displayText, valueColor: .green)
                 Divider().padding(.leading, 46)
-                aboutRow(title: "Logs", value: "Open") {
+                aboutRow(title: appState.localized("logs"), value: appState.localized("open")) {
                     let logsURL = FileManager.default.urls(
                         for: .applicationSupportDirectory,
                         in: .userDomainMask
@@ -903,6 +953,24 @@ struct SettingsTabView: View {
             Toggle("", isOn: isOn)
                 .labelsHidden()
                 .toggleStyle(.switch)
+        }
+        .frame(height: 44)
+    }
+
+    private func pickerRow<Content: View>(icon: String, title: String, @ViewBuilder content: () -> Content) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 14))
+                .foregroundColor(.secondary)
+                .frame(width: 30)
+
+            Text(title)
+                .font(.system(size: 13))
+                .foregroundColor(.primary)
+
+            Spacer()
+
+            content()
         }
         .frame(height: 44)
     }

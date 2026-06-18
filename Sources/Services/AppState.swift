@@ -12,13 +12,16 @@ class AppState: ObservableObject {
     // MARK: - Published Properties
 
     @Published var isActive: Bool = false
-    @Published var operationMode: OperationMode = .virtualDisplay
+    @Published var operationMode: OperationMode = .preventSleep
     @Published var displayConfig: DisplayConfig = DisplayConfig.presets[0]
     @Published var notificationsEnabled: Bool = true
     @Published var hotkeyEnabled: Bool = true
     @Published var restoreLastConfig: Bool = false
     @Published var showInDock: Bool = false
     @Published var autoActivateOnLaunch: Bool = false
+    @Published var language: AppLanguage = .system
+    @Published var theme: AppTheme = .system
+    @Published var lastErrorMessage: String?
     @Published private(set) var launchAtLoginEnabled: Bool = false
 
     // MARK: - Services
@@ -54,6 +57,7 @@ class AppState: ObservableObject {
 
         // 从 UserDefaults 加载设置
         loadSettings()
+        applyAllSettings()
 
         // 设置服务回调
         setupServiceCallbacks()
@@ -82,6 +86,7 @@ class AppState: ObservableObject {
     /// 激活
     func activate() {
         guard !isActive else { return }
+        lastErrorMessage = nil
 
         // 开源版本：移除授权检查，直接激活
 
@@ -95,11 +100,7 @@ class AppState: ObservableObject {
                 try virtualDisplayService.createDisplay(config: displayConfig)
                 try? sleepService.preventSleep()
             } catch {
-                logger.error("Failed to activate: \(error.localizedDescription)")
-                notificationService.send(
-                    title: "Activation Failed",
-                    body: error.localizedDescription
-                )
+                reportActivationFailure(error.localizedDescription)
                 return
             }
 
@@ -108,11 +109,7 @@ class AppState: ObservableObject {
                 try audioService.startRouting()
                 try? sleepService.preventSleep()
             } catch {
-                logger.error("Failed to activate: \(error.localizedDescription)")
-                notificationService.send(
-                    title: "Activation Failed",
-                    body: error.localizedDescription
-                )
+                reportActivationFailure(error.localizedDescription)
                 return
             }
 
@@ -122,12 +119,8 @@ class AppState: ObservableObject {
                 try audioService.startRouting()
                 try? sleepService.preventSleep()
             } catch {
-                logger.error("Failed to activate: \(error.localizedDescription)")
+                reportActivationFailure(error.localizedDescription)
                 deactivate()  // 清理部分成功的服务
-                notificationService.send(
-                    title: "Activation Failed",
-                    body: error.localizedDescription
-                )
                 return
             }
         }
@@ -138,8 +131,8 @@ class AppState: ObservableObject {
         // 发送通知
         if notificationsEnabled {
             notificationService.send(
-                title: "CaffeinatePlus Activated",
-                body: "Your Mac will stay awake"
+                title: localized("activated_title"),
+                body: localized("activated_body")
             )
         }
     }
@@ -147,6 +140,7 @@ class AppState: ObservableObject {
     /// 停用
     func deactivate() {
         guard isActive else { return }
+        lastErrorMessage = nil
 
         sleepService.allowSleep()
         virtualDisplayService.removeDisplay()
@@ -158,8 +152,8 @@ class AppState: ObservableObject {
         // 发送通知
         if notificationsEnabled {
             notificationService.send(
-                title: "CaffeinatePlus Deactivated",
-                body: "Your Mac can sleep normally"
+                title: localized("deactivated_title"),
+                body: localized("deactivated_body")
             )
         }
     }
@@ -184,6 +178,48 @@ class AppState: ObservableObject {
         }
     }
 
+    func setPreventDisplaySleep(_ enabled: Bool) {
+        sleepService.preventDisplaySleep = enabled
+        if !enabled {
+            sleepService.preventScreenSaver = false
+        }
+        updateActiveFlagFromSleepService()
+    }
+
+    func setPreventSystemSleep(_ enabled: Bool) {
+        sleepService.preventSystemSleep = enabled
+        if !enabled {
+            sleepService.preventAutoLock = false
+        }
+        updateActiveFlagFromSleepService()
+    }
+
+    func setNotificationsEnabled(_ enabled: Bool) {
+        notificationsEnabled = enabled
+        if enabled {
+            notificationService.requestAuthorization()
+        }
+    }
+
+    func setHotkeyEnabled(_ enabled: Bool) {
+        hotkeyEnabled = enabled
+        applyHotkeySetting()
+    }
+
+    func setShowInDock(_ enabled: Bool) {
+        showInDock = enabled
+        applyDockSetting()
+    }
+
+    func setLanguage(_ newLanguage: AppLanguage) {
+        language = newLanguage
+        applyLanguageSetting()
+    }
+
+    func localized(_ key: String) -> String {
+        NSLocalizedString(key, bundle: .module, comment: "")
+    }
+
     // MARK: - Settings Persistence
 
     /// 保存设置（对齐原始应用）
@@ -199,24 +235,28 @@ class AppState: ObservableObject {
         defaults.set(restoreLastConfig, forKey: "restoreLastConfig")
         defaults.set(showInDock, forKey: "showInDock")
         defaults.set(autoActivateOnLaunch, forKey: "autoActivateOnLaunch")
+        defaults.set(language.rawValue, forKey: "language")
+        defaults.set(theme.rawValue, forKey: "theme")
     }
 
     /// 加载设置
     private func loadSettings() {
         operationMode = OperationMode(
             rawValue: defaults.string(forKey: "operationMode") ?? ""
-        ) ?? .virtualDisplay
+        ) ?? .preventSleep
 
         if let configData = defaults.data(forKey: "displayConfig"),
            let config = try? JSONDecoder().decode(DisplayConfig.self, from: configData) {
             displayConfig = config
         }
 
-        notificationsEnabled = defaults.bool(forKey: "notificationsEnabled")
-        hotkeyEnabled = defaults.bool(forKey: "hotkeyEnabled")
-        restoreLastConfig = defaults.bool(forKey: "restoreLastConfig")
-        showInDock = defaults.bool(forKey: "showInDock")
-        autoActivateOnLaunch = defaults.bool(forKey: "autoActivateOnLaunch")
+        notificationsEnabled = boolSetting("notificationsEnabled", defaultValue: true)
+        hotkeyEnabled = boolSetting("hotkeyEnabled", defaultValue: true)
+        restoreLastConfig = boolSetting("restoreLastConfig", defaultValue: false)
+        showInDock = boolSetting("showInDock", defaultValue: false)
+        autoActivateOnLaunch = boolSetting("autoActivateOnLaunch", defaultValue: false)
+        language = AppLanguage(rawValue: defaults.string(forKey: "language") ?? "") ?? .system
+        theme = AppTheme(rawValue: defaults.string(forKey: "theme") ?? "") ?? .system
 
         if #available(macOS 13.0, *) {
             launchAtLoginEnabled = SMAppService.mainApp.status == .enabled
@@ -234,6 +274,53 @@ class AppState: ObservableObject {
         if restoreLastConfig {
             saveSettings()
         }
+    }
+
+    private func reportActivationFailure(_ message: String) {
+        logger.error("Failed to activate: \(message)")
+        lastErrorMessage = message
+        notificationService.send(title: localized("activation_failed"), body: message)
+    }
+
+    private func boolSetting(_ key: String, defaultValue: Bool) -> Bool {
+        guard defaults.object(forKey: key) != nil else { return defaultValue }
+        return defaults.bool(forKey: key)
+    }
+
+    private func updateActiveFlagFromSleepService() {
+        let active = sleepService.isPreventingAnything ||
+            virtualDisplayService.isActive || audioService.isRouting
+
+        if isActive != active {
+            isActive = active
+        }
+        updateActiveState()
+    }
+
+    private func applyAllSettings() {
+        applyLanguageSetting()
+        applyHotkeySetting()
+        applyDockSetting()
+    }
+
+    private func applyLanguageSetting() {
+        if let languages = language.appleLanguagesValue {
+            defaults.set(languages, forKey: "AppleLanguages")
+        } else {
+            defaults.removeObject(forKey: "AppleLanguages")
+        }
+    }
+
+    private func applyHotkeySetting() {
+        if hotkeyEnabled {
+            hotkeyService.enable()
+        } else {
+            hotkeyService.disable()
+        }
+    }
+
+    private func applyDockSetting() {
+        NSApp.setActivationPolicy(showInDock ? .regular : .accessory)
     }
 
     /// 处理合盖状态变化（对齐原始应用）
@@ -285,6 +372,18 @@ class AppState: ObservableObject {
             self?.saveSettings()
         }
         .store(in: &cancellables)
+
+        Publishers.CombineLatest4(
+            $restoreLastConfig,
+            $operationMode,
+            $language,
+            $theme
+        )
+        .debounce(for: 0.5, scheduler: DispatchQueue.main)
+        .sink { [weak self] _ in
+            self?.saveSettings()
+        }
+        .store(in: &cancellables)
     }
 
     // MARK: - Cleanup
@@ -304,11 +403,15 @@ enum OperationMode: String, Codable, Hashable, CaseIterable {
     case combined = "combined"
 
     var displayName: String {
+        displayName(language: .system)
+    }
+
+    func displayName(language: AppLanguage) -> String {
         switch self {
-        case .preventSleep: return "Prevent Sleep"
-        case .virtualDisplay: return "Virtual Display"
-        case .audioRouting: return "Audio Routing"
-        case .combined: return "Combined Mode"
+        case .preventSleep: return NSLocalizedString("prevent_sleep", bundle: .module, comment: "")
+        case .virtualDisplay: return NSLocalizedString("virtual_display", bundle: .module, comment: "")
+        case .audioRouting: return NSLocalizedString("audio_routing", bundle: .module, comment: "")
+        case .combined: return NSLocalizedString("combined_mode", bundle: .module, comment: "")
         }
     }
 }

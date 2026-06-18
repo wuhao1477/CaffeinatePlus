@@ -5,6 +5,7 @@ import PackageDescription
 
 let package = Package(
     name: "CaffeinatePlus",
+    defaultLocalization: "en",
     platforms: [
         .macOS(.v13)
     ],
@@ -22,8 +23,8 @@ let package = Package(
             name: "CaffeinatePlus",
             dependencies: [],
             path: "Sources",
-            exclude: [
-                "Resources"
+            resources: [
+                .process("Resources")
             ]
         ),
         .testTarget(

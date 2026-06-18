@@ -18,6 +18,7 @@ struct CaffeinatePlusApp: App {
         MenuBarExtra {
             PopoverView()
                 .environmentObject(appState)
+                .preferredColorScheme(appState.theme.colorScheme)
         } label: {
             // 菜单栏图标
             Label {
@@ -34,6 +35,7 @@ struct CaffeinatePlusApp: App {
         Settings {
             SettingsTabView()
                 .environmentObject(appState)
+                .preferredColorScheme(appState.theme.colorScheme)
         }
         #endif
     }

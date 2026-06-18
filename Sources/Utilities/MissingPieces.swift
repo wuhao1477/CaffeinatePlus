@@ -46,13 +46,13 @@ extension OperationMode {
     var description: String {
         switch self {
         case .preventSleep:
-            return "Keep your Mac awake"
+            return NSLocalizedString("keep_mac_awake_description", bundle: .module, comment: "")
         case .virtualDisplay:
-            return "Create a virtual display"
+            return NSLocalizedString("virtual_display_description", bundle: .module, comment: "")
         case .audioRouting:
-            return "Route audio to virtual device"
+            return NSLocalizedString("audio_routing_description", bundle: .module, comment: "")
         case .combined:
-            return "All features enabled"
+            return NSLocalizedString("combined_mode_description", bundle: .module, comment: "")
         }
     }
 
@@ -118,34 +118,39 @@ enum CaffeinateError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .sleepServiceFailed(let reason):
-            return "Failed to prevent sleep: \(reason)"
+            let format = NSLocalizedString("sleep_service_failed_error", bundle: .module, comment: "")
+            return String(format: format, reason)
         case .virtualDisplayFailed(let reason):
-            return "Failed to create virtual display: \(reason)"
+            let format = NSLocalizedString("virtual_display_create_failed_error", bundle: .module, comment: "")
+            return String(format: format, reason)
         case .audioRoutingFailed(let reason):
-            return "Failed to route audio: \(reason)"
+            let format = NSLocalizedString("audio_routing_failed_error", bundle: .module, comment: "")
+            return String(format: format, reason)
         case .permissionDenied(let permission):
-            return "Permission denied: \(permission)"
+            let format = NSLocalizedString("permission_denied_error", bundle: .module, comment: "")
+            return String(format: format, permission)
         case .configurationError(let message):
-            return "Configuration error: \(message)"
+            let format = NSLocalizedString("configuration_error", bundle: .module, comment: "")
+            return String(format: format, message)
         case .unknownError:
-            return "An unknown error occurred"
+            return NSLocalizedString("unknown_error", bundle: .module, comment: "")
         }
     }
 
     var recoverySuggestion: String? {
         switch self {
         case .sleepServiceFailed:
-            return "Try restarting the app or checking system permissions."
+            return NSLocalizedString("recovery_sleep_service_failed", bundle: .module, comment: "")
         case .virtualDisplayFailed:
-            return "Ensure your macOS version supports virtual displays (13.0+)."
+            return NSLocalizedString("recovery_virtual_display_failed", bundle: .module, comment: "")
         case .audioRoutingFailed:
-            return "Check that BlackHole audio driver is installed."
+            return NSLocalizedString("recovery_audio_routing_failed", bundle: .module, comment: "")
         case .permissionDenied:
-            return "Grant the required permission in System Preferences."
+            return NSLocalizedString("recovery_permission_denied", bundle: .module, comment: "")
         case .configurationError:
-            return "Check your settings and try again."
+            return NSLocalizedString("recovery_configuration_error", bundle: .module, comment: "")
         case .unknownError:
-            return "Contact support if this problem persists."
+            return NSLocalizedString("recovery_unknown_error", bundle: .module, comment: "")
         }
     }
 }

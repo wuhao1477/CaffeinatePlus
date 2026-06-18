@@ -182,12 +182,12 @@ enum VirtualDisplayError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .apiUnavailable:
-            return "Virtual display API is not available on this system. " +
-                   "Requires macOS 13.0+ and private framework access."
+            return NSLocalizedString("virtual_display_api_unavailable_error", bundle: .module, comment: "")
         case .createFailed(let reason):
-            return "Failed to create virtual display: \(reason)"
+            let format = NSLocalizedString("virtual_display_create_failed_error", bundle: .module, comment: "")
+            return String(format: format, reason)
         case .unknownError:
-            return "Unknown error occurred"
+            return NSLocalizedString("unknown_error", bundle: .module, comment: "")
         }
     }
 }

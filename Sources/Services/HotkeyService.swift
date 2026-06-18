@@ -23,16 +23,6 @@ class HotkeyService {
 
     init(onToggle: (() -> Void)? = nil) {
         self.onToggle = onToggle
-
-        // 检查并请求辅助功能权限
-        if checkAccessibilityPermission() {
-            startMonitoring()
-        } else {
-            Logger.shared.warning("Accessibility permission required for global hotkey. Please grant permission in System Preferences.")
-
-            // 提示用户授予权限
-            promptForAccessibilityPermission()
-        }
     }
 
     deinit {
@@ -51,6 +41,7 @@ class HotkeyService {
             startMonitoring()
         } else {
             Logger.shared.warning("Cannot enable hotkey: accessibility permission not granted")
+            promptForAccessibilityPermission()
         }
     }
 
@@ -86,19 +77,19 @@ class HotkeyService {
         // 先显示友好的提示对话框
         DispatchQueue.main.async {
             let alert = NSAlert()
-            alert.messageText = "Accessibility Permission Required"
-            alert.informativeText = """
-            CaffeinatePlus needs Accessibility permission to enable global hotkeys (⌘⇧C).
-
-            Steps to grant permission:
-            1. Click "Open System Preferences" below
-            2. Find "CaffeinatePlus" in the list
-            3. Check the box next to it
-            4. Restart CaffeinatePlus
-            """
+            alert.messageText = NSLocalizedString(
+                "accessibility_permission_title",
+                bundle: .module,
+                comment: ""
+            )
+            alert.informativeText = NSLocalizedString(
+                "accessibility_permission_body",
+                bundle: .module,
+                comment: ""
+            )
             alert.alertStyle = .informational
-            alert.addButton(withTitle: "Open System Preferences")
-            alert.addButton(withTitle: "Later")
+            alert.addButton(withTitle: NSLocalizedString("open_system_settings", bundle: .module, comment: ""))
+            alert.addButton(withTitle: NSLocalizedString("later", bundle: .module, comment: ""))
 
             let response = alert.runModal()
 

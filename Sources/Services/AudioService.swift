@@ -308,15 +308,15 @@ enum AudioServiceError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .driverNotInstalled:
-            return "BlackHole driver is not installed"
+            return NSLocalizedString("blackhole_not_installed_error", bundle: .module, comment: "")
         case .cannotGetDefaultDevice:
-            return "Cannot get default output device"
+            return NSLocalizedString("cannot_get_default_device_error", bundle: .module, comment: "")
         case .cannotSetDefaultDevice:
-            return "Cannot set default output device"
+            return NSLocalizedString("cannot_set_default_device_error", bundle: .module, comment: "")
         case .cannotGetDeviceUID:
-            return "Cannot get device UID"
+            return NSLocalizedString("cannot_get_device_uid_error", bundle: .module, comment: "")
         case .cannotCreateAggregateDevice:
-            return "Cannot create aggregate device"
+            return NSLocalizedString("cannot_create_aggregate_device_error", bundle: .module, comment: "")
         }
     }
 }

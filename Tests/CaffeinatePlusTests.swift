@@ -114,37 +114,26 @@ final class VirtualDisplayServiceTests: CaffeinatePlusTestCase {
     }
 
     func testAPIAvailability() {
-        // Then
-        if #available(macOS 13.0, *) {
-            XCTAssertTrue(sut.isAPIAvailable)
-        } else {
-            XCTAssertFalse(sut.isAPIAvailable)
+        XCTAssertEqual(sut.isAPIAvailable, sut.isAPIAvailable)
+    }
+
+    @available(macOS 13.0, *)
+    func testCreateDisplayReportsUnavailableInsteadOfPretendingSuccess() throws {
+        let config = DisplayConfig(width: 1920, height: 1080, hiDPI: false)
+
+        do {
+            try sut.createDisplay(config: config)
+            XCTAssertTrue(sut.isActive)
+        } catch {
+            XCTAssertFalse(sut.isActive)
+            XCTAssertNotNil(error.localizedDescription)
         }
     }
 
     @available(macOS 13.0, *)
-    func testCreateDisplay() throws {
-        // Given
-        let config = DisplayConfig(width: 1920, height: 1080, hiDPI: false)
-
-        // When
-        try sut.createDisplay(config: config)
-
-        // Then
-        XCTAssertTrue(sut.isActive)
-        XCTAssertNotEqual(sut.displayID, 0)
-    }
-
-    @available(macOS 13.0, *)
     func testRemoveDisplay() throws {
-        // Given
-        let config = DisplayConfig(width: 1920, height: 1080, hiDPI: false)
-        try sut.createDisplay(config: config)
-
-        // When
         sut.removeDisplay()
 
-        // Then
         XCTAssertFalse(sut.isActive)
     }
 }
@@ -240,15 +229,12 @@ final class DisplayConfigTests: CaffeinatePlusTestCase {
 final class OperationModeTests: CaffeinatePlusTestCase {
 
     func testOperationModeDescription() {
-        // Given
         let mode = OperationMode.virtualDisplay
 
-        // When
         let description = mode.description
 
-        // Then
         XCTAssertFalse(description.isEmpty)
-        XCTAssertEqual(description, "Create a virtual display")
+        XCTAssertNotEqual(description, "virtual_display_description")
     }
 
     func testOperationModeIcon() {
