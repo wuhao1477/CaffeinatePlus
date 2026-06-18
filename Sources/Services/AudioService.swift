@@ -82,6 +82,11 @@ class AudioService: ObservableObject {
         Logger.shared.info("Audio routing stopped")
     }
 
+    /// 重新检测 BlackHole 驱动安装状态
+    func refreshDriverInstallation() {
+        checkDriverInstallation()
+    }
+
     // MARK: - Driver Detection
 
     /// 检查 BlackHole 驱动是否安装
