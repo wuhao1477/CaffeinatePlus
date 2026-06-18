@@ -138,7 +138,7 @@ class AppState: ObservableObject {
         // 发送通知
         if notificationsEnabled {
             notificationService.send(
-                title: "Caffeinate+ Activated",
+                title: "CaffeinatePlus Activated",
                 body: "Your Mac will stay awake"
             )
         }
@@ -158,7 +158,7 @@ class AppState: ObservableObject {
         // 发送通知
         if notificationsEnabled {
             notificationService.send(
-                title: "Caffeinate+ Deactivated",
+                title: "CaffeinatePlus Deactivated",
                 body: "Your Mac can sleep normally"
             )
         }

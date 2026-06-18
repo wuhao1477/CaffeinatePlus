@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-APP_NAME="Caffeinate+"
+APP_NAME="CaffeinatePlus"
 EXECUTABLE_NAME="CaffeinatePlus"
 BUNDLE_ID="com.caffeinateplus.app"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

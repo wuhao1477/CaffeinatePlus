@@ -29,7 +29,7 @@ enum Constants {
 
     enum Audio {
         static let blackHoleUID = "BlackHole2ch_UID"
-        static let aggregateDeviceName = "Caffeinate+ Audio"
+        static let aggregateDeviceName = "CaffeinatePlus Audio"
     }
 
     enum Display {
@@ -290,7 +290,7 @@ extension Date {
 
 extension Bundle {
     var appName: String {
-        infoDictionary?["CFBundleName"] as? String ?? "Caffeinate+"
+        infoDictionary?["CFBundleName"] as? String ?? "CaffeinatePlus"
     }
 
     var appVersion: String {

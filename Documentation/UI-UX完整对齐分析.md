@@ -1,4 +1,4 @@
-# Caffeinate+ UI/UX/交互/行为完整对齐分析报告
+# CaffeinatePlus UI/UX/交互/行为完整对齐分析报告
 
 ## 🎨 UI层面缺失分析
 
@@ -417,7 +417,7 @@ HotkeyService  // ⌘⇧C 切换激活
 **需要添加的**：
 
 ```swift
-.accessibilityLabel("Activate Caffeinate+")
+.accessibilityLabel("Activate CaffeinatePlus")
 .accessibilityHint("Prevents your Mac from sleeping")
 .accessibilityValue(appState.isActive ? "Active" : "Inactive")
 .accessibilityAddTraits(.isButton)

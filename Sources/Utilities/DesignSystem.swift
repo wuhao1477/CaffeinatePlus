@@ -1,5 +1,5 @@
 // DesignSystem.swift
-// Caffeinate+ 设计系统
+// CaffeinatePlus 设计系统
 // 统一颜色、字体、间距、动画
 
 import SwiftUI

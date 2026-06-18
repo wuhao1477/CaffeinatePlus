@@ -1,4 +1,4 @@
-# Caffeinate+ 代码重构资源
+# CaffeinatePlus 代码重构资源
 
 > **基于逆向分析还原的完整代码实现**  
 > **语言**: Swift  
@@ -141,7 +141,7 @@ virtualDisplay = try CGVirtualDisplay(descriptor: descriptor)
 
 ```swift
 let description: [String: Any] = [
-    kAudioAggregateDeviceNameKey: "Caffeinate+ Audio",
+    kAudioAggregateDeviceNameKey: "CaffeinatePlus Audio",
     kAudioAggregateDeviceSubDeviceListKey: [outputUID, virtualUID],
     kAudioAggregateDeviceMasterSubDeviceKey: outputUID
 ]
@@ -251,7 +251,7 @@ struct CaffeinatePlusApp: App {
     @StateObject private var appState = AppState()
     
     var body: some Scene {
-        MenuBarExtra("Caffeinate+", systemImage: "bolt.fill") {
+        MenuBarExtra("CaffeinatePlus", systemImage: "bolt.fill") {
             ContentView()
                 .environmentObject(appState)
         }
@@ -469,12 +469,12 @@ func computeHMAC(for input: String, secret: String) -> Data {
 
 ## 📚 相关文档
 
-- [完整逆向分析报告](../Caffeinate+_逆向分析报告.md)
+- [完整逆向分析报告](../CaffeinatePlus_逆向分析报告.md)
 - [资源整合目录](../资源整合目录.md)
-- [深度反汇编分析](../Caffeinate+_深度反汇编分析.md)
+- [深度反汇编分析](../CaffeinatePlus_深度反汇编分析.md)
 
 ---
 
 **创建时间**: 2026-06-17  
-**基于版本**: Caffeinate+ 1.0.0  
+**基于版本**: CaffeinatePlus 1.0.0
 **代码状态**: 完整可编译（需配置私有框架）

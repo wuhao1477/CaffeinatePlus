@@ -1,8 +1,8 @@
-# Caffeinate+
+# CaffeinatePlus
 
 <div align="center">
 
-![Caffeinate+ Logo](Resources/AppIcon.png)
+![CaffeinatePlus Logo](Resources/AppIcon.png)
 
 **Keep your Mac awake with style**
 
@@ -15,7 +15,7 @@
 
 ## 📖 Overview
 
-Caffeinate+ is a powerful macOS menu bar application that prevents your Mac from sleeping. It offers advanced features like virtual display creation, audio routing, and system monitoring.
+CaffeinatePlus is a powerful macOS menu bar application that prevents your Mac from sleeping. It offers advanced features like virtual display creation, audio routing, and system monitoring.
 
 ### ✨ Features
 
@@ -41,7 +41,7 @@ Caffeinate+ is a powerful macOS menu bar application that prevents your Mac from
 
 1. Download the latest `.dmg` from [Releases](https://github.com/caffeinateplus/caffeinateplus/releases)
 2. Open the `.dmg` file
-3. Drag **Caffeinate+.app** to Applications folder
+3. Drag **CaffeinatePlus.app** to Applications folder
 4. Launch from Applications or Spotlight
 
 #### Option 2: Build from Source
@@ -233,7 +233,7 @@ Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for gu
 
 ### Contributors
 
-Thanks to all contributors who have helped make Caffeinate+ better!
+Thanks to all contributors who have helped make CaffeinatePlus better!
 
 <!-- ALL-CONTRIBUTORS-LIST:START -->
 <!-- ALL-CONTRIBUTORS-LIST:END -->
@@ -273,7 +273,7 @@ This project is licensed under the MIT License - see [LICENSE](LICENSE) file for
 
 ## 🔒 Privacy
 
-Caffeinate+ respects your privacy:
+CaffeinatePlus respects your privacy:
 
 - ✅ No data collection
 - ✅ No analytics
@@ -283,13 +283,13 @@ Caffeinate+ respects your privacy:
 
 ## ⚠️ Disclaimer
 
-Caffeinate+ is provided "as is" without warranty. Prolonged prevention of sleep may affect system updates and battery life.
+CaffeinatePlus is provided "as is" without warranty. Prolonged prevention of sleep may affect system updates and battery life.
 
 ---
 
 <div align="center">
 
-Made with ❤️ by the Caffeinate+ Team
+Made with ❤️ by the CaffeinatePlus Team
 
 ⭐ Star this repo if you find it useful!
 

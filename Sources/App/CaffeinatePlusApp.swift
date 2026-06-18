@@ -21,7 +21,7 @@ struct CaffeinatePlusApp: App {
         } label: {
             // 菜单栏图标
             Label {
-                Text("Caffeinate+")
+                Text("CaffeinatePlus")
             } icon: {
                 Image(systemName: appState.isActive ? "bolt.fill" : "bolt")
                     .symbolRenderingMode(.hierarchical)

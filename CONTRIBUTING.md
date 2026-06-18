@@ -1,8 +1,8 @@
-# Contributing to Caffeinate+
+# Contributing to CaffeinatePlus
 
-First off, thank you for considering contributing to Caffeinate+! 🎉
+First off, thank you for considering contributing to CaffeinatePlus! 🎉
 
-The following is a set of guidelines for contributing to Caffeinate+. These are mostly guidelines, not rules. Use your best judgment, and feel free to propose changes to this document in a pull request.
+The following is a set of guidelines for contributing to CaffeinatePlus. These are mostly guidelines, not rules. Use your best judgment, and feel free to propose changes to this document in a pull request.
 
 ## Table of Contents
 
@@ -38,7 +38,7 @@ Before creating bug reports, please check existing issues to avoid duplicates.
 3. **Provide specific examples**
 4. **Describe the behavior you observed and expected**
 5. **Include screenshots if applicable**
-6. **Specify your environment** (macOS version, Caffeinate+ version)
+6. **Specify your environment** (macOS version, CaffeinatePlus version)
 
 **Bug Report Template:**
 
@@ -60,7 +60,7 @@ If applicable, add screenshots.
 
 **Environment:**
  - macOS Version: [e.g. 13.4]
- - Caffeinate+ Version: [e.g. 1.0.0]
+ - CaffeinatePlus Version: [e.g. 1.0.0]
  - Mac Model: [e.g. MacBook Pro M2]
 
 **Additional context**
@@ -381,4 +381,4 @@ By contributing, you agree that your contributions will be licensed under the MI
 
 ---
 
-Thank you for contributing to Caffeinate+! 🙏
+Thank you for contributing to CaffeinatePlus! 🙏

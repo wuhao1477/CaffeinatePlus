@@ -37,7 +37,7 @@ class SleepService: ObservableObject {
     private var displayAssertionID: IOPMAssertionID = 0
     private var systemAssertionID: IOPMAssertionID = 0
     private var userActivityTimer: Timer?
-    private let reason: String = "Caffeinate+ Active"
+    private let reason: String = "CaffeinatePlus Active"
 
     // MARK: - Constants
 
@@ -62,7 +62,7 @@ class SleepService: ObservableObject {
         preventScreenSaver = true
         preventAutoLock = true
 
-        Logger.shared.info("Caffeinate+ Activated (all modes)")
+        Logger.shared.info("CaffeinatePlus Activated (all modes)")
     }
 
     /// 停止防睡眠（一次性禁用所有）
@@ -72,7 +72,7 @@ class SleepService: ObservableObject {
         preventScreenSaver = false
         preventAutoLock = false
 
-        Logger.shared.info("Caffeinate+ Deactivated")
+        Logger.shared.info("CaffeinatePlus Deactivated")
     }
 
     // MARK: - Private Update Methods

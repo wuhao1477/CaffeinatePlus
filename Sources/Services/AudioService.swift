@@ -21,7 +21,7 @@ class AudioService: ObservableObject {
     // MARK: - Constants
 
     private let BLACKHOLE_DRIVER_NAME = "BlackHole"
-    private let AGGREGATE_DEVICE_NAME = "Caffeinate+ Audio"
+    private let AGGREGATE_DEVICE_NAME = "CaffeinatePlus Audio"
     private let DEVICE_SWITCH_DELAY_MS: UInt32 = 500_000  // 500ms
 
     // MARK: - Initialization

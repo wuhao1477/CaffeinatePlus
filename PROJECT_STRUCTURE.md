@@ -1,4 +1,4 @@
-# Caffeinate+ Project Structure
+# CaffeinatePlus Project Structure
 
 ## 项目架构
 
@@ -332,4 +332,4 @@ let apiEndpoint = "https://api.example.com"
 ---
 
 **最后更新**: 2026-06-18
-**维护者**: Caffeinate+ Team
+**维护者**: CaffeinatePlus Team
