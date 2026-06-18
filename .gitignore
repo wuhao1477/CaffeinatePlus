@@ -116,6 +116,7 @@ Temporary Items
 .apdisk
 
 # Custom
+dist/
 *.xcconfig
 !Configuration/*.xcconfig.template
 Secrets.xcconfig
