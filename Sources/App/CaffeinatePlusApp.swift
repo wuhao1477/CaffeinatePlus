@@ -7,36 +7,36 @@ import SwiftUI
 @main
 struct CaffeinatePlusApp: App {
 
-    // MARK: - State Objects
+  // MARK: - State Objects
 
-    @StateObject private var appState = AppState()
+  @StateObject private var appState = AppState()
 
-    // MARK: - Scene
+  // MARK: - Scene
 
-    var body: some Scene {
-        // 菜单栏应用
-        MenuBarExtra {
-            PopoverView()
-                .environmentObject(appState)
-                .preferredColorScheme(appState.theme.colorScheme)
-        } label: {
-            // 菜单栏图标
-            Label {
-                Text("CaffeinatePlus")
-            } icon: {
-                Image(systemName: appState.isActive ? "bolt.fill" : "bolt")
-                    .symbolRenderingMode(.hierarchical)
-            }
-        }
-        .menuBarExtraStyle(.window)
-
-        // 设置窗口（可选）
-        #if DEBUG
-        Settings {
-            SettingsTabView()
-                .environmentObject(appState)
-                .preferredColorScheme(appState.theme.colorScheme)
-        }
-        #endif
+  var body: some Scene {
+    // 菜单栏应用
+    MenuBarExtra {
+      PopoverView()
+        .environmentObject(appState)
+        .preferredColorScheme(appState.theme.colorScheme)
+    } label: {
+      // 菜单栏图标
+      Label {
+        Text("CaffeinatePlus")
+      } icon: {
+        Image(systemName: appState.isActive ? "bolt.fill" : "bolt")
+          .symbolRenderingMode(.hierarchical)
+      }
     }
+    .menuBarExtraStyle(.window)
+
+    // 设置窗口（可选）
+    #if DEBUG
+      Settings {
+        SettingsTabView()
+          .environmentObject(appState)
+          .preferredColorScheme(appState.theme.colorScheme)
+      }
+    #endif
+  }
 }
