@@ -7,36 +7,38 @@ import SwiftUI
 
 struct PopoverView: View {
     @EnvironmentObject var appState: AppState
-    @State private var selectedTab: PopoverTab = .awake
+    @State private var selectedTab: PopoverTab = .display
 
     var body: some View {
         VStack(spacing: 0) {
             PopoverHeaderView()
 
+            Divider()
+
             PopoverTabBar(selection: $selectedTab)
 
-            // Tab 内容
-            TabView(selection: $selectedTab) {
-                AwakeTabView()
-                    .tag(PopoverTab.awake)
+            Divider()
 
-                DisplayTabView()
-                    .tag(PopoverTab.display)
-
-                AudioTabView()
-                    .tag(PopoverTab.audio)
-
-                MonitorTabView()
-                    .tag(PopoverTab.monitor)
-
-                SettingsTabView()
-                    .tag(PopoverTab.settings)
+            Group {
+                switch selectedTab {
+                case .awake:
+                    AwakeTabView()
+                case .display:
+                    DisplayTabView()
+                case .audio:
+                    AudioTabView()
+                case .monitor:
+                    MonitorTabView()
+                case .settings:
+                    SettingsTabView()
+                }
             }
-            .tabViewStyle(.automatic)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
 
             PopoverFooterView()
         }
-        .frame(width: 400, height: 600)
+        .background(Color(NSColor.windowBackgroundColor))
+        .frame(width: 320, height: 460)
     }
 }
 
@@ -46,30 +48,28 @@ struct PopoverHeaderView: View {
     @EnvironmentObject var appState: AppState
 
     var body: some View {
-        HStack {
-            Image(systemName: "bolt.fill")
-                .font(.title2)
-                .foregroundColor(.accentColor)
+        HStack(spacing: 12) {
+            Image(systemName: "cup.and.saucer.fill")
+                .font(.system(size: 25, weight: .semibold))
+                .foregroundColor(.blue)
 
             Text("CaffeinatePlus")
-                .font(.headline)
+                .font(.system(size: 16, weight: .bold))
+                .foregroundColor(.primary)
 
             Spacer()
 
-            // 状态指示器
-            if appState.isActive {
-                HStack(spacing: 4) {
-                    Circle()
-                        .fill(Color.green)
-                        .frame(width: 8, height: 8)
-                    Text("Active")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
+            HStack(spacing: 6) {
+                Circle()
+                    .fill(appState.isActive ? Color.green : Color.orange)
+                    .frame(width: 8, height: 8)
+                Text(appState.isActive ? "Active" : "Idle")
+                    .font(.system(size: 13, weight: .regular))
+                    .foregroundColor(.secondary)
             }
         }
-        .padding()
-        .background(Color(NSColor.windowBackgroundColor))
+        .padding(.horizontal, 18)
+        .frame(height: 44)
     }
 }
 
@@ -80,25 +80,31 @@ struct PopoverFooterView: View {
 
     var body: some View {
         HStack {
-            // 版本信息
-            Text("v1.0.0")
-                .font(.caption)
-                .foregroundColor(.secondary)
+            HStack(spacing: 6) {
+                Image(systemName: "clock")
+                    .font(.system(size: 11))
+                Text("Open Source")
+                    .font(.system(size: 12, weight: .regular))
+            }
+            .foregroundColor(.orange)
 
             Spacer()
 
-            // 主切换按钮
             Button(action: {
-                appState.toggle()
+                NSApplication.shared.terminate(nil)
             }) {
-                Text(appState.isActive ? "Deactivate" : "Activate")
-                    .frame(minWidth: 100)
+                HStack(spacing: 5) {
+                    Image(systemName: "power")
+                    Text("Quit")
+                }
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(.secondary)
             }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
+            .buttonStyle(.plain)
         }
-        .padding()
-        .background(Color(NSColor.windowBackgroundColor))
+        .padding(.horizontal, 18)
+        .frame(height: 31)
+        .overlay(alignment: .top) { Divider() }
     }
 }
 
@@ -117,9 +123,8 @@ struct PopoverTabBar: View {
                 )
             }
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 4)
-        .background(Color(NSColor.controlBackgroundColor))
+        .padding(.horizontal, 16)
+        .frame(height: 64)
     }
 }
 
@@ -134,20 +139,20 @@ struct PopoverTabButton: View {
         Button(action: action) {
             VStack(spacing: 4) {
                 Image(systemName: tab.icon)
-                    .font(.system(size: 20))
+                    .font(.system(size: 23, weight: .regular))
 
                 Text(tab.title)
-                    .font(.caption)
+                    .font(.system(size: 11, weight: .regular))
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 8)
+            .frame(height: 49)
             .background(
-                isSelected ? Color.accentColor.opacity(0.2) : Color.clear
+                isSelected ? Color.blue.opacity(0.12) : Color.clear
             )
-            .cornerRadius(8)
+            .cornerRadius(10)
         }
         .buttonStyle(.plain)
-        .foregroundColor(isSelected ? .accentColor : .secondary)
+        .foregroundColor(isSelected ? .blue : .secondary)
     }
 }
 
@@ -255,76 +260,166 @@ struct DisplayTabView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 16) {
-                // 虚拟显示器切换
-                virtualDisplayToggleCard
-
-                // 配置选项
-                if appState.virtualDisplayService.isActive {
-                    configurationSection
-                }
+            VStack(alignment: .leading, spacing: 24) {
+                emptyStateView
+                createDisplaySection
+                quickPresetsSection
             }
-            .padding()
+            .padding(.horizontal, 16)
+            .padding(.top, 25)
+            .padding(.bottom, 18)
         }
     }
 
-    private var virtualDisplayToggleCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Image(systemName: "display")
-                    .font(.largeTitle)
-                    .foregroundColor(.purple)
-                    .frame(width: 60, height: 60)
-
-                VStack(alignment: .leading) {
-                    Text("Virtual Display")
-                        .font(.headline)
-                    Text(appState.virtualDisplayService.isActive ? "Active" : "Inactive")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                }
-
-                Spacer()
-
-                Toggle("", isOn: Binding(
-                    get: { appState.virtualDisplayService.isActive },
-                    set: { enabled in
-                        if enabled {
-                            try? appState.virtualDisplayService.createDisplay(
-                                config: appState.displayConfig
-                            )
-                        } else {
-                            appState.virtualDisplayService.removeDisplay()
-                        }
-                    }
-                ))
-                .toggleStyle(.switch)
-            }
-        }
-        .padding()
-        .background(Color(NSColor.controlBackgroundColor))
-        .cornerRadius(12)
-    }
-
-    private var configurationSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Configuration")
-                .font(.headline)
-
-            if let config = appState.virtualDisplayService.currentConfig {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Resolution: \(config.width) × \(config.height)")
-                    Text("HiDPI: \(config.hiDPI ? "Yes" : "No")")
-                    Text("Refresh Rate: \(Int(config.refreshRate)) Hz")
-                }
-                .font(.caption)
+    private var emptyStateView: some View {
+        HStack(spacing: 16) {
+            Image(systemName: "display")
+                .font(.system(size: 34, weight: .regular))
                 .foregroundColor(.secondary)
+                .frame(width: 54)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(appState.virtualDisplayService.isActive ? "Virtual Display Active" : "No Virtual Display")
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundColor(.primary)
+
+                Text(appState.virtualDisplayService.isActive ? "Extending your desktop" : "Extends to the right of your main display")
+                    .font(.system(size: 12, weight: .regular))
+                    .foregroundColor(.secondary)
+                    .lineLimit(2)
+            }
+
+            Spacer()
+        }
+    }
+
+    private var createDisplaySection: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            Text("Create Virtual Display")
+                .font(.system(size: 13, weight: .bold))
+                .foregroundColor(.secondary)
+
+            VStack(spacing: 0) {
+                optionRow(title: "Resolution") {
+                    Picker("", selection: Binding(
+                        get: { selectedPresetIndex },
+                        set: { appState.displayConfig = DisplayConfig.presets[$0] }
+                    )) {
+                        Text("1080p (1,920x1,080)").tag(0)
+                        Text("1440p (2,560x1,440)").tag(1)
+                        Text("4K (3,840x2,160)").tag(2)
+                    }
+                    .labelsHidden()
+                    .frame(width: 162)
+                }
+
+                Divider().padding(.leading, 46)
+
+                optionRow(title: "Refresh Rate") {
+                    Picker("", selection: Binding(
+                        get: { Int(appState.displayConfig.refreshRate) },
+                        set: { refreshRate in
+                            var config = appState.displayConfig
+                            config.refreshRate = Double(refreshRate)
+                            appState.displayConfig = config
+                        }
+                    )) {
+                        Text("60 Hz").tag(60)
+                        Text("120 Hz").tag(120)
+                    }
+                    .labelsHidden()
+                    .frame(width: 90)
+                }
+
+                Divider().padding(.leading, 46)
+
+                optionRow(title: "HiDPI (Retina)") {
+                    Toggle("", isOn: Binding(
+                        get: { appState.displayConfig.hiDPI },
+                        set: { enabled in
+                            var config = appState.displayConfig
+                            config.hiDPI = enabled
+                            appState.displayConfig = config
+                        }
+                    ))
+                    .labelsHidden()
+                    .toggleStyle(.switch)
+                }
+            }
+
+            Button(action: toggleVirtualDisplay) {
+                HStack(spacing: 12) {
+                    Image(systemName: appState.virtualDisplayService.isActive ? "minus.circle.fill" : "plus.circle.fill")
+                        .font(.system(size: 13, weight: .semibold))
+                    Text(appState.virtualDisplayService.isActive ? "Remove Virtual Display" : "Create Virtual Display")
+                        .font(.system(size: 14, weight: .bold))
+                }
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .frame(height: 44)
+                .background(Color.blue)
+                .cornerRadius(22)
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    private var quickPresetsSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Quick Presets")
+                .font(.system(size: 13, weight: .bold))
+                .foregroundColor(.secondary)
+
+            HStack(spacing: 8) {
+                presetButton("1080p", index: 0)
+                presetButton("1440p", index: 1)
+                presetButton("4K", index: 2)
             }
         }
-        .padding()
-        .background(Color(NSColor.controlBackgroundColor))
-        .cornerRadius(12)
     }
+
+    private var selectedPresetIndex: Int {
+        DisplayConfig.presets.firstIndex(where: { preset in
+            preset.width == appState.displayConfig.width &&
+            preset.height == appState.displayConfig.height &&
+            preset.hiDPI == appState.displayConfig.hiDPI
+        }) ?? 0
+    }
+
+    private func optionRow<Content: View>(title: String, @ViewBuilder content: () -> Content) -> some View {
+        HStack {
+            Text(title)
+                .font(.system(size: 13, weight: .regular))
+                .foregroundColor(.primary)
+
+            Spacer()
+
+            content()
+        }
+        .frame(height: 41)
+    }
+
+    private func presetButton(_ title: String, index: Int) -> some View {
+        Button(action: { appState.displayConfig = DisplayConfig.presets[index] }) {
+            Text(title)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(selectedPresetIndex == index ? .white : .blue)
+                .frame(maxWidth: .infinity)
+                .frame(height: 32)
+                .background(selectedPresetIndex == index ? Color.blue : Color.blue.opacity(0.1))
+                .cornerRadius(8)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func toggleVirtualDisplay() {
+        if appState.virtualDisplayService.isActive {
+            appState.virtualDisplayService.removeDisplay()
+        } else {
+            try? appState.virtualDisplayService.createDisplay(config: appState.displayConfig)
+        }
+    }
+
 }
 
 // MARK: - AudioTabView
