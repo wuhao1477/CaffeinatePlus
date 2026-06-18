@@ -83,11 +83,32 @@ class HotkeyService {
 
     /// 提示用户授予辅助功能权限
     private func promptForAccessibilityPermission() {
-        // 弹出系统权限提示
-        let options: NSDictionary = [
-            kAXTrustedCheckOptionPrompt.takeUnretainedValue(): true
-        ]
-        _ = AXIsProcessTrustedWithOptions(options)
+        // 先显示友好的提示对话框
+        DispatchQueue.main.async {
+            let alert = NSAlert()
+            alert.messageText = "Accessibility Permission Required"
+            alert.informativeText = """
+            CaffeinatePlus needs Accessibility permission to enable global hotkeys (⌘⇧C).
+
+            Steps to grant permission:
+            1. Click "Open System Preferences" below
+            2. Find "CaffeinatePlus" in the list
+            3. Check the box next to it
+            4. Restart CaffeinatePlus
+            """
+            alert.alertStyle = .informational
+            alert.addButton(withTitle: "Open System Preferences")
+            alert.addButton(withTitle: "Later")
+
+            let response = alert.runModal()
+
+            if response == .alertFirstButtonReturn {
+                // 打开系统偏好设置
+                if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
+                    NSWorkspace.shared.open(url)
+                }
+            }
+        }
 
         Logger.shared.info("Accessibility permission prompt shown to user")
     }

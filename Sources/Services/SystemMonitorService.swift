@@ -58,7 +58,7 @@ class SystemMonitorService: ObservableObject {
     }
 
     /// 刷新所有监控数据
-    private func refresh() {
+    func refresh() {
         refreshCPUUsage()
         refreshMemoryUsage()
         refreshDiskUsage()

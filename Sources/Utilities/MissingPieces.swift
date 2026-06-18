@@ -16,8 +16,6 @@ extension UserDefaults {
         static let restoreLastConfig = "restoreLastConfig"
         static let showInDock = "showInDock"
         static let autoActivateOnLaunch = "autoActivateOnLaunch"
-        static let firstLaunchDate = "firstLaunchDate"
-        static let trial = "trial"
     }
 }
 
@@ -27,13 +25,6 @@ enum Constants {
     enum Window {
         static let width: CGFloat = 400
         static let height: CGFloat = 600
-    }
-
-    enum License {
-        static let trialDays = 2
-        static let hmacSecret = "CaffeinatePlusSecretKey2026"
-        static let keychainService = "com.caffeinateplus.app"
-        static let keychainAccount = "licenseKey"
     }
 
     enum Audio {
@@ -49,26 +40,6 @@ enum Constants {
 }
 
 // MARK: - Enhanced Enums
-
-// LicenseState 增强
-extension LicenseState {
-    var needsUpgrade: Bool {
-        self == .expired
-    }
-
-    var canUseApp: Bool {
-        self == .trial || self == .activated
-    }
-
-    var displayText: String {
-        switch self {
-        case .welcome: return "Welcome"
-        case .trial: return "Trial"
-        case .activated: return "Activated"
-        case .expired: return "Expired"
-        }
-    }
-}
 
 // OperationMode 增强
 extension OperationMode {
@@ -140,8 +111,6 @@ enum CaffeinateError: LocalizedError {
     case sleepServiceFailed(String)
     case virtualDisplayFailed(String)
     case audioRoutingFailed(String)
-    case licenseInvalid
-    case trialExpired
     case permissionDenied(String)
     case configurationError(String)
     case unknownError
@@ -154,10 +123,6 @@ enum CaffeinateError: LocalizedError {
             return "Failed to create virtual display: \(reason)"
         case .audioRoutingFailed(let reason):
             return "Failed to route audio: \(reason)"
-        case .licenseInvalid:
-            return "Invalid license key"
-        case .trialExpired:
-            return "Trial period has expired. Please activate your license."
         case .permissionDenied(let permission):
             return "Permission denied: \(permission)"
         case .configurationError(let message):
@@ -175,10 +140,6 @@ enum CaffeinateError: LocalizedError {
             return "Ensure your macOS version supports virtual displays (13.0+)."
         case .audioRoutingFailed:
             return "Check that BlackHole audio driver is installed."
-        case .licenseInvalid:
-            return "Please check your license key and try again."
-        case .trialExpired:
-            return "Purchase a license to continue using Caffeinate+."
         case .permissionDenied:
             return "Grant the required permission in System Preferences."
         case .configurationError:

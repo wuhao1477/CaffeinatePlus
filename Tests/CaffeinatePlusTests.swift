@@ -31,62 +31,15 @@ final class LicenseServiceTests: CaffeinatePlusTestCase {
         super.tearDown()
     }
 
-    // MARK: - Trial Tests
-
-    func testStartTrial() {
-        // Given
-        XCTAssertEqual(sut.state, .welcome)
-
-        // When
-        sut.startTrial()
-
-        // Then
-        XCTAssertEqual(sut.state, .trial)
-    }
-
-    func testTrialExpiration() {
-        // Given
-        sut.startTrial()
-
-        // When
-        let daysRemaining = sut.trialDaysRemaining()
-
-        // Then
-        XCTAssertGreaterThanOrEqual(daysRemaining, 0)
-        XCTAssertLessThanOrEqual(daysRemaining, Constants.License.trialDays)
-    }
-
-    // MARK: - Activation Tests
-
-    func testValidLicenseActivation() {
-        // Given
-        let validKey = generateValidLicenseKey()
-
-        // When
-        let result = sut.activate(key: validKey)
-
-        // Then
-        XCTAssertTrue(result)
+    func testOpenSourceLicenseStartsActivated() {
         XCTAssertEqual(sut.state, .activated)
+        XCTAssertEqual(sut.statusDescription(), "Open Source - Free Forever")
     }
 
-    func testInvalidLicenseActivation() {
-        // Given
-        let invalidKey = "INVALID-KEY"
+    func testCheckLicenseKeepsActivatedState() {
+        sut.checkLicense()
 
-        // When
-        let result = sut.activate(key: invalidKey)
-
-        // Then
-        XCTAssertFalse(result)
-        XCTAssertNotEqual(sut.state, .activated)
-    }
-
-    // MARK: - Helper Methods
-
-    private func generateValidLicenseKey() -> String {
-        // Generate a valid test key
-        return "TEST-VALID-KEY-12345"
+        XCTAssertEqual(sut.state, .activated)
     }
 }
 
@@ -315,24 +268,20 @@ final class OperationModeTests: CaffeinatePlusTestCase {
 final class LicenseStateTests: CaffeinatePlusTestCase {
 
     func testCanUseApp() {
-        // Given
-        let trialState = LicenseState.trial
         let activatedState = LicenseState.activated
-        let expiredState = LicenseState.expired
 
-        // Then
-        XCTAssertTrue(trialState.canUseApp)
         XCTAssertTrue(activatedState.canUseApp)
-        XCTAssertFalse(expiredState.canUseApp)
     }
 
     func testNeedsUpgrade() {
-        // Given
-        let expiredState = LicenseState.expired
-        let trialState = LicenseState.trial
+        let activatedState = LicenseState.activated
 
-        // Then
-        XCTAssertTrue(expiredState.needsUpgrade)
-        XCTAssertFalse(trialState.needsUpgrade)
+        XCTAssertFalse(activatedState.needsUpgrade)
+    }
+
+    func testDisplayText() {
+        let activatedState = LicenseState.activated
+
+        XCTAssertEqual(activatedState.displayText, "Open Source Edition")
     }
 }

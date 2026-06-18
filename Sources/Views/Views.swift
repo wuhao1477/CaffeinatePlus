@@ -51,7 +51,7 @@ struct PopoverHeaderView: View {
                 .font(.title2)
                 .foregroundColor(.accentColor)
 
-            Text("Caffeinate+")
+            Text("CaffeinatePlus")
                 .font(.headline)
 
             Spacer()
@@ -190,9 +190,7 @@ struct AwakeTabView: View {
         ScrollView {
             VStack(spacing: 16) {
                 // 许可证过期横幅
-                if appState.licenseService.state == .expired {
-                    licenseExpiredBanner
-                }
+                // 开源版本：移除授权横幅
 
                 // 主切换卡片
                 masterToggleCard
@@ -204,20 +202,6 @@ struct AwakeTabView: View {
         }
     }
 
-    private var licenseExpiredBanner: some View {
-        HStack {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .foregroundColor(.orange)
-
-            Text("Trial Expired")
-                .font(.headline)
-
-            Spacer()
-        }
-        .padding()
-        .background(Color.orange.opacity(0.1))
-        .cornerRadius(8)
-    }
 
     private var masterToggleCard: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -271,94 +255,185 @@ struct DisplayTabView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 16) {
-                // 许可证过期横幅
-                if appState.licenseService.state == .expired {
-                    licenseExpiredBanner
+            VStack(spacing: 20) {
+                // 如果没有虚拟显示器，显示空状态
+                if !appState.virtualDisplayService.isActive {
+                    emptyStateView
                 }
 
-                // 虚拟显示器切换
-                virtualDisplayToggleCard
-
-                // 配置选项
-                if appState.virtualDisplayService.isActive {
-                    configurationSection
-                }
+                // 创建虚拟显示器部分
+                createDisplaySection
             }
             .padding()
         }
     }
 
-    private var licenseExpiredBanner: some View {
-        HStack {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .foregroundColor(.orange)
-            Text("Trial Expired")
-            Spacer()
-        }
-        .padding()
-        .background(Color.orange.opacity(0.1))
-        .cornerRadius(8)
-    }
+    // MARK: - Empty State
 
-    private var virtualDisplayToggleCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Image(systemName: "display")
-                    .font(.largeTitle)
-                    .foregroundColor(.purple)
-                    .frame(width: 60, height: 60)
+    private var emptyStateView: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "display")
+                .font(.system(size: 48))
+                .foregroundColor(.secondary)
 
-                VStack(alignment: .leading) {
-                    Text("Virtual Display")
-                        .font(.headline)
-                    Text(appState.virtualDisplayService.isActive ? "Active" : "Inactive")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                }
+            Text("No Virtual Display")
+                .font(.title3)
+                .fontWeight(.semibold)
 
-                Spacer()
-
-                Toggle("", isOn: Binding(
-                    get: { appState.virtualDisplayService.isActive },
-                    set: { enabled in
-                        if enabled {
-                            try? appState.virtualDisplayService.createDisplay(
-                                config: appState.displayConfig
-                            )
-                        } else {
-                            appState.virtualDisplayService.removeDisplay()
-                        }
-                    }
-                ))
-                .toggleStyle(.switch)
-                .disabled(appState.licenseService.state != .activated &&
-                         appState.licenseService.state != .trial)
-            }
-        }
-        .padding()
-        .background(Color(NSColor.controlBackgroundColor))
-        .cornerRadius(12)
-    }
-
-    private var configurationSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Configuration")
-                .font(.headline)
-
-            if let config = appState.virtualDisplayService.currentConfig {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Resolution: \(config.width) × \(config.height)")
-                    Text("HiDPI: \(config.hiDPI ? "Yes" : "No")")
-                    Text("Refresh Rate: \(Int(config.refreshRate)) Hz")
-                }
+            Text("Extends to the right of your main display")
                 .font(.caption)
                 .foregroundColor(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 30)
+    }
+
+    // MARK: - Create Display Section
+
+    private var createDisplaySection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Create Virtual Display")
+                .font(.headline)
+                .foregroundColor(.secondary)
+
+            VStack(spacing: 16) {
+                // Resolution
+                HStack {
+                    Text("Resolution")
+                        .frame(width: 120, alignment: .leading)
+
+                    Spacer()
+
+                    Menu {
+                        Button("1080p (1,920x1,080)") {
+                            appState.displayConfig = DisplayConfig.presets[0]
+                        }
+                        Button("1440p (2,560x1,440)") {
+                            appState.displayConfig = DisplayConfig.presets[1]
+                        }
+                        Button("4K (3,840x2,160)") {
+                            appState.displayConfig = DisplayConfig.presets[2]
+                        }
+                    } label: {
+                        HStack {
+                            Text(appState.displayConfig.shortLabel)
+                            Image(systemName: "chevron.up.chevron.down")
+                                .font(.caption)
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Color(NSColor.controlBackgroundColor))
+                        .cornerRadius(6)
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                // Refresh Rate
+                HStack {
+                    Text("Refresh Rate")
+                        .frame(width: 120, alignment: .leading)
+
+                    Spacer()
+
+                    Menu {
+                        Button("60 Hz") {
+                            var config = appState.displayConfig
+                            config.refreshRate = 60
+                            appState.displayConfig = config
+                        }
+                        Button("120 Hz") {
+                            var config = appState.displayConfig
+                            config.refreshRate = 120
+                            appState.displayConfig = config
+                        }
+                    } label: {
+                        HStack {
+                            Text("\(Int(appState.displayConfig.refreshRate)) Hz")
+                            Image(systemName: "chevron.up.chevron.down")
+                                .font(.caption)
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Color(NSColor.controlBackgroundColor))
+                        .cornerRadius(6)
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                // HiDPI (Retina)
+                HStack {
+                    Text("HiDPI (Retina)")
+                        .frame(width: 120, alignment: .leading)
+
+                    Spacer()
+
+                    Toggle("", isOn: Binding(
+                        get: { appState.displayConfig.hiDPI },
+                        set: { enabled in
+                            var config = appState.displayConfig
+                            config.hiDPI = enabled
+                            appState.displayConfig = config
+                        }
+                    ))
+                    .labelsHidden()
+                }
+
+                // Create Button
+                Button(action: {
+                    if appState.virtualDisplayService.isActive {
+                        appState.virtualDisplayService.removeDisplay()
+                    } else {
+                        try? appState.virtualDisplayService.createDisplay(config: appState.displayConfig)
+                    }
+                }) {
+                    HStack {
+                        Image(systemName: appState.virtualDisplayService.isActive ? "minus" : "plus")
+                        Text(appState.virtualDisplayService.isActive ? "Remove Virtual Display" : "Create Virtual Display")
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+            }
+
+            // Quick Presets
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Quick Presets")
+                    .font(.headline)
+                    .foregroundColor(.secondary)
+
+                HStack(spacing: 12) {
+                    PresetButton(label: "1080p") {
+                        appState.displayConfig = DisplayConfig.presets[0]
+                    }
+                    PresetButton(label: "1440p") {
+                        appState.displayConfig = DisplayConfig.presets[1]
+                    }
+                    PresetButton(label: "4K") {
+                        appState.displayConfig = DisplayConfig.presets[2]
+                    }
+                }
             }
         }
-        .padding()
-        .background(Color(NSColor.controlBackgroundColor))
-        .cornerRadius(12)
+    }
+}
+
+// MARK: - PresetButton
+
+struct PresetButton: View {
+    let label: String
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Text(label)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 8)
+                .background(Color(NSColor.controlBackgroundColor))
+                .cornerRadius(8)
+        }
+        .buttonStyle(.plain)
     }
 }
 
@@ -371,9 +446,7 @@ struct AudioTabView: View {
         ScrollView {
             VStack(spacing: 16) {
                 // 许可证过期横幅
-                if appState.licenseService.state == .expired {
-                    licenseExpiredBanner
-                }
+                // 开源版本：移除授权横幅
 
                 // 主内容
                 if appState.audioService.isDriverInstalled {
@@ -384,18 +457,6 @@ struct AudioTabView: View {
             }
             .padding()
         }
-    }
-
-    private var licenseExpiredBanner: some View {
-        HStack {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .foregroundColor(.orange)
-            Text("Trial Expired")
-            Spacer()
-        }
-        .padding()
-        .background(Color.orange.opacity(0.1))
-        .cornerRadius(8)
     }
 
     private var driverInstalledView: some View {
@@ -465,8 +526,7 @@ struct AudioTabView: View {
                 }
             ))
             .toggleStyle(.switch)
-            .disabled(appState.licenseService.state != .activated &&
-                     appState.licenseService.state != .trial)
+            // 开源版本：移除授权限制
         }
         .padding()
         .background(Color(NSColor.controlBackgroundColor))
@@ -474,45 +534,62 @@ struct AudioTabView: View {
     }
 
     private var routingDiagram: some View {
-        VStack(spacing: 8) {
-            diagramRow(icon: "desktopcomputer", label: "System Audio", color: .blue)
-
-            Image(systemName: "arrow.down")
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Audio Flow")
+                .font(.headline)
                 .foregroundColor(.secondary)
 
-            diagramRow(icon: "speaker", label: "Speaker + BlackHole", color: .green)
+            VStack(spacing: 16) {
+                // App Audio
+                AudioFlowBox(
+                    icon: "app.fill",
+                    label: "App Audio",
+                    color: .blue
+                )
 
-            HStack {
-                VStack {
-                    Image(systemName: "arrow.right")
-                        .foregroundColor(.secondary)
-                    diagramRow(icon: "speaker", label: "Output", color: .gray)
-                    Text("Real speakers")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                }
+                Image(systemName: "arrow.down")
+                    .foregroundColor(.secondary)
+                    .font(.title3)
 
-                VStack {
-                    Image(systemName: "arrow.right")
-                        .foregroundColor(.secondary)
-                    diagramRow(icon: "mic", label: "Virtual Mic", color: .orange)
-                    Text("OBS, Zoom, etc.")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
+                // Aggregate Device
+                AudioFlowBox(
+                    icon: "rectangle.3.group",
+                    label: "Aggregate Device",
+                    color: .purple
+                )
+
+                HStack(spacing: 40) {
+                    VStack(spacing: 8) {
+                        Image(systemName: "arrow.down")
+                            .foregroundColor(.secondary)
+                            .font(.title3)
+
+                        AudioFlowBox(
+                            icon: "speaker.wave.2.fill",
+                            label: "Speaker",
+                            color: .green,
+                            subtitle: "You hear"
+                        )
+                    }
+
+                    VStack(spacing: 8) {
+                        Image(systemName: "arrow.down")
+                            .foregroundColor(.secondary)
+                            .font(.title3)
+
+                        AudioFlowBox(
+                            icon: "waveform",
+                            label: "BlackHole",
+                            color: .orange,
+                            subtitle: "Virtual mic"
+                        )
+                    }
                 }
             }
-        }
-        .padding()
-        .background(Color.gray.opacity(0.1))
-        .cornerRadius(12)
-    }
-
-    private func diagramRow(icon: String, label: String, color: Color) -> some View {
-        HStack {
-            Image(systemName: icon)
-                .foregroundColor(color)
-            Text(label)
-                .font(.caption)
+            .frame(maxWidth: .infinity)
+            .padding()
+            .background(Color(NSColor.windowBackgroundColor).opacity(0.5))
+            .cornerRadius(12)
         }
     }
 }
@@ -524,78 +601,179 @@ struct MonitorTabView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 16) {
-                systemInfoCard
-                powerInfoCard
-                displayInfoCard
+            VStack(spacing: 20) {
+                systemInfoSection
+                resourceUsageSection
+                quickActionsSection
             }
             .padding()
         }
     }
 
-    private var systemInfoCard: some View {
+    // MARK: - System Info Section
+
+    private var systemInfoSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("System Information")
+            Text("System Info")
                 .font(.headline)
-
-            VStack(alignment: .leading, spacing: 8) {
-                infoRow("CPU Usage", value: "\(Int(appState.systemMonitorService.cpuUsage))%")
-                infoRow("Memory", value: formatBytes(appState.systemMonitorService.memoryUsed))
-                infoRow("Disk", value: formatBytes(appState.systemMonitorService.diskUsed))
-                infoRow("Uptime", value: formatUptime(appState.systemMonitorService.systemUptime))
-            }
-        }
-        .padding()
-        .background(Color(NSColor.controlBackgroundColor))
-        .cornerRadius(12)
-    }
-
-    private var powerInfoCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Power")
-                .font(.headline)
-
-            VStack(alignment: .leading, spacing: 8) {
-                infoRow("Battery", value: "\(appState.systemMonitorService.batteryLevel)%")
-                infoRow("Status", value: appState.systemMonitorService.isCharging ? "Charging" : "On Battery")
-            }
-        }
-        .padding()
-        .background(Color(NSColor.controlBackgroundColor))
-        .cornerRadius(12)
-    }
-
-    private var displayInfoCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Displays")
-                .font(.headline)
-
-            infoRow("Connected", value: "\(appState.systemMonitorService.connectedDisplays)")
-        }
-        .padding()
-        .background(Color(NSColor.controlBackgroundColor))
-        .cornerRadius(12)
-    }
-
-    private func infoRow(_ label: String, value: String) -> some View {
-        HStack {
-            Text(label)
                 .foregroundColor(.secondary)
-            Spacer()
-            Text(value)
-                .bold()
+
+            VStack(spacing: 12) {
+                SystemInfoRow(
+                    icon: "clock",
+                    iconColor: .blue,
+                    label: "System Uptime",
+                    value: formatUptime(appState.systemMonitorService.systemUptime)
+                )
+
+                SystemInfoRow(
+                    icon: "display",
+                    iconColor: .cyan,
+                    label: "Connected Displays",
+                    value: "\(appState.systemMonitorService.connectedDisplays)"
+                )
+
+                SystemInfoRow(
+                    icon: "thermometer",
+                    iconColor: .green,
+                    label: "Thermal State",
+                    value: thermalStateText(appState.systemMonitorService.thermalState)
+                )
+
+                SystemInfoRow(
+                    icon: "battery.100",
+                    iconColor: .green,
+                    label: "Battery",
+                    value: "\(appState.systemMonitorService.batteryLevel)% (\(appState.systemMonitorService.isCharging ? "Charging" : "On Battery"))"
+                )
+            }
         }
-        .font(.caption)
     }
 
-    private func formatBytes(_ bytes: UInt64) -> String {
-        let gb = Double(bytes) / 1_073_741_824
-        return String(format: "%.1f GB", gb)
+    // MARK: - Resource Usage Section
+
+    private var resourceUsageSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Resource Usage")
+                .font(.headline)
+                .foregroundColor(.secondary)
+
+            VStack(spacing: 16) {
+                // CPU
+                ResourceUsageRow(
+                    icon: "cpu",
+                    label: "CPU",
+                    value: appState.systemMonitorService.cpuUsage,
+                    percentage: "\(String(format: "%.1f", appState.systemMonitorService.cpuUsage))%",
+                    color: .green
+                )
+
+                ResourceUsageRow(
+                    icon: "memorychip",
+                    label: "Memory",
+                    value: percent(
+                        used: appState.systemMonitorService.memoryUsed,
+                        total: appState.systemMonitorService.memoryTotal
+                    ),
+                    percentage: capacityText(
+                        used: appState.systemMonitorService.memoryUsed,
+                        total: appState.systemMonitorService.memoryTotal,
+                        fractionDigits: 2
+                    ),
+                    color: .orange
+                )
+
+                VStack(spacing: 8) {
+                    HStack {
+                        Image(systemName: "internaldrive")
+                            .foregroundColor(.secondary)
+                        Text("Disk")
+                        Spacer()
+                        Text(capacityText(
+                            used: appState.systemMonitorService.diskUsed,
+                            total: appState.systemMonitorService.diskTotal,
+                            fractionDigits: 0
+                        ))
+                            .foregroundColor(.secondary)
+                    }
+
+                    ProgressView(
+                        value: percent(
+                            used: appState.systemMonitorService.diskUsed,
+                            total: appState.systemMonitorService.diskTotal
+                        ),
+                        total: 100
+                    )
+                        .tint(.orange)
+                }
+            }
+        }
+    }
+
+    // MARK: - Quick Actions Section
+
+    private var quickActionsSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Quick Actions")
+                .font(.headline)
+                .foregroundColor(.secondary)
+
+            HStack(spacing: 12) {
+                QuickActionButton(
+                    icon: "arrow.clockwise",
+                    label: "Refresh",
+                    action: {
+                        appState.systemMonitorService.refresh()
+                    }
+                )
+
+                QuickActionButton(
+                    icon: "chart.bar.fill",
+                    label: "Activity",
+                    action: {
+                        NSWorkspace.shared.open(URL(fileURLWithPath: "/System/Applications/Utilities/Activity Monitor.app"))
+                    }
+                )
+
+                QuickActionButton(
+                    icon: "info.circle",
+                    label: "System Info",
+                    action: {
+                        NSWorkspace.shared.open(URL(fileURLWithPath: "/System/Applications/Utilities/System Information.app"))
+                    }
+                )
+            }
+        }
     }
 
     private func formatUptime(_ seconds: TimeInterval) -> String {
-        let hours = Int(seconds) / 3600
-        return "\(hours)h"
+        let days = Int(seconds) / 86400
+        let hours = (Int(seconds) % 86400) / 3600
+        let minutes = (Int(seconds) % 3600) / 60
+        return "\(days)d \(hours)h \(minutes)m"
+    }
+
+    private func percent(used: UInt64, total: UInt64) -> Double {
+        guard total > 0 else { return 0 }
+        return min(100, (Double(used) / Double(total)) * 100)
+    }
+
+    private func capacityText(used: UInt64, total: UInt64, fractionDigits: Int) -> String {
+        guard total > 0 else { return "Unavailable" }
+        let divisor = 1_073_741_824.0
+        let usedGB = Double(used) / divisor
+        let totalGB = Double(total) / divisor
+        return String(format: "%.*f GB / %.*f GB", fractionDigits, usedGB, fractionDigits, totalGB)
+    }
+
+    private func thermalStateText(_ state: ProcessInfo.ThermalState) -> String {
+        switch state {
+        case .nominal: return "Normal"
+        case .fair: return "Fair"
+        case .serious: return "Serious"
+        case .critical: return "Critical"
+        @unknown default: return "Unknown"
+        }
     }
 }
 
@@ -621,153 +799,264 @@ struct SettingsTabView: View {
     }
 
     private var licenseSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("License")
+        VStack(alignment: .leading, spacing: 0) {
+            Text("About")
                 .font(.headline)
+                .padding(.horizontal)
+                .padding(.top)
 
-            switch appState.licenseService.state {
-            case .welcome:
-                Button("Start Free Trial") {
-                    appState.licenseService.startTrial()
-                }
-
-            case .trial:
-                Text("Trial: \(appState.licenseService.trialDaysRemaining()) days remaining")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-
-                Button("Activate License") {
-                    appState.showLicenseActivation = true
-                }
-
-            case .activated:
+            VStack(alignment: .leading, spacing: 12) {
+                // 应用名称和版本
                 HStack {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundColor(.green)
-                    Text("Licensed")
+                    Text("CaffeinatePlus")
+                        .font(.body)
+                    Spacer()
+                    Text("v2.0.0")
+                        .font(.body)
                         .foregroundColor(.secondary)
                 }
 
-            case .expired:
-                Text("Trial Expired")
-                    .foregroundColor(.orange)
-                Button("Activate License") {
-                    appState.showLicenseActivation = true
+                Divider()
+
+                // CGVirtualDisplay API 状态
+                HStack {
+                    Text("CGVirtualDisplay API")
+                        .font(.body)
+                    Spacer()
+                    HStack(spacing: 4) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundColor(.green)
+                        Text("Available")
+                            .foregroundColor(.green)
+                    }
+                }
+
+                Divider()
+
+                // Lid State
+                HStack {
+                    Text("Lid State")
+                        .font(.body)
+                    Spacer()
+                    Text("Open")
+                        .foregroundColor(.secondary)
                 }
             }
+            .padding()
+            .background(Color(NSColor.controlBackgroundColor))
+            .cornerRadius(12)
         }
-        .padding()
-        .background(Color(NSColor.controlBackgroundColor))
-        .cornerRadius(12)
     }
 
     private var generalSettings: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 0) {
             Text("General")
                 .font(.headline)
+                .padding(.horizontal)
+                .padding(.top)
 
-            Toggle("Enable Notifications", isOn: $appState.notificationsEnabled)
-            Toggle("Enable Hotkey (⌘⇧C)", isOn: $appState.hotkeyEnabled)
-            Toggle("Show in Dock", isOn: $appState.showInDock)
+            VStack(spacing: 0) {
+                // Launch at Login
+                SettingRow(
+                    icon: "arrow.right.circle",
+                    title: "Launch at Login",
+                    description: "Start automatically on login",
+                    isOn: Binding(
+                        get: { appState.launchAtLoginEnabled },
+                        set: { _ in
+                            if #available(macOS 13.0, *) {
+                                appState.toggleLaunchAtLogin()
+                            }
+                        }
+                    )
+                )
+
+                Divider()
+                    .padding(.leading, 60)
+
+                // Restore Last Config
+                SettingRow(
+                    icon: "arrow.counterclockwise",
+                    title: "Restore Last Config",
+                    description: "Resume previous state on launch",
+                    isOn: $appState.restoreLastConfig
+                )
+
+                Divider()
+                    .padding(.leading, 60)
+
+                // Global Hotkey
+                SettingRow(
+                    icon: "keyboard",
+                    title: "Global Hotkey",
+                    description: "Cmd+Shift+C to toggle",
+                    isOn: $appState.hotkeyEnabled
+                )
+
+                Divider()
+                    .padding(.leading, 60)
+
+                // Notifications
+                SettingRow(
+                    icon: "bell",
+                    title: "Notifications",
+                    description: "Status change alerts",
+                    isOn: $appState.notificationsEnabled
+                )
+
+                Divider()
+                    .padding(.leading, 60)
+
+                // Show in Dock
+                SettingRow(
+                    icon: "rectangle.dock",
+                    title: "Show in Dock",
+                    description: "Display app icon in Dock",
+                    isOn: $appState.showInDock
+                )
+
+                Divider()
+                    .padding(.leading, 60)
+
+                // Auto Activate on Launch
+                SettingRow(
+                    icon: "bolt",
+                    title: "Auto Activate on Launch",
+                    description: "Activate all features after reboot",
+                    isOn: $appState.autoActivateOnLaunch
+                )
+            }
+            .background(Color(NSColor.controlBackgroundColor))
+            .cornerRadius(12)
         }
-        .padding()
-        .background(Color(NSColor.controlBackgroundColor))
-        .cornerRadius(12)
     }
 
     private var advancedSettings: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Advanced")
-                .font(.headline)
-
-            Toggle("Restore Last Config", isOn: $appState.restoreLastConfig)
-            Toggle("Auto-activate on Launch", isOn: $appState.autoActivateOnLaunch)
-
-            Button("View Logs") {
-                let logsURL = FileManager.default.urls(
-                    for: .applicationSupportDirectory,
-                    in: .userDomainMask
-                )[0]
-                .appendingPathComponent("CaffeinatePlus")
-                .appendingPathComponent("Logs")
-
-                NSWorkspace.shared.open(logsURL)
+        VStack(spacing: 0) {
+            // 退出按钮
+            Button(action: {
+                NSApplication.shared.terminate(nil)
+            }) {
+                HStack {
+                    Image(systemName: "power")
+                        .font(.title3)
+                    Text("Quit")
+                        .font(.body)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
             }
+            .buttonStyle(.plain)
+            .foregroundColor(.primary)
+            .background(Color(NSColor.controlBackgroundColor))
+            .cornerRadius(12)
+            .keyboardShortcut("q", modifiers: .command)
         }
-        .padding()
-        .background(Color(NSColor.controlBackgroundColor))
-        .cornerRadius(12)
     }
 }
 
-// MARK: - License Overlays
+// MARK: - SettingRow
 
-struct WelcomeOverlay: View {
-    @EnvironmentObject var appState: AppState
-    @Environment(\.dismiss) var dismiss
+struct SystemInfoRow: View {
+    let icon: String
+    let iconColor: Color
+    let label: String
+    let value: String
 
     var body: some View {
-        VStack(spacing: 20) {
-            Image(systemName: "bolt.circle.fill")
-                .font(.system(size: 60))
-                .foregroundColor(.accentColor)
-
-            Text("Welcome to Caffeinate+")
-                .font(.title)
-
-            Text("Keep your Mac awake with virtual displays and audio routing")
-                .multilineTextAlignment(.center)
+        HStack {
+            Image(systemName: icon)
+                .foregroundColor(iconColor)
+                .frame(width: 24)
+            Text(label)
+                .font(.body)
+            Spacer()
+            Text(value)
+                .font(.body)
                 .foregroundColor(.secondary)
-
-            Button("Start 2-Day Free Trial") {
-                appState.licenseService.startTrial()
-                dismiss()
-            }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
         }
-        .padding(40)
-        .frame(width: 400)
     }
 }
 
-struct LicenseActivationOverlay: View {
-    @EnvironmentObject var appState: AppState
-    @Environment(\.dismiss) var dismiss
-    @State private var licenseKey: String = ""
-    @State private var errorMessage: String?
+struct ResourceUsageRow: View {
+    let icon: String
+    let label: String
+    let value: Double
+    let percentage: String
+    let color: Color
 
     var body: some View {
-        VStack(spacing: 20) {
-            Text("Activate License")
-                .font(.title2)
+        VStack(spacing: 8) {
+            HStack {
+                Image(systemName: icon)
+                    .foregroundColor(.secondary)
+                Text(label)
+                Spacer()
+                Text(percentage)
+                    .foregroundColor(.secondary)
+            }
 
-            TextField("License Key", text: $licenseKey)
-                .textFieldStyle(.roundedBorder)
+            ProgressView(value: value, total: 100)
+                .tint(color)
+        }
+    }
+}
 
-            if let error = errorMessage {
-                Text(error)
-                    .foregroundColor(.red)
+struct QuickActionButton: View {
+    let icon: String
+    let label: String
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 8) {
+                Image(systemName: icon)
+                    .font(.title2)
+                Text(label)
                     .font(.caption)
             }
-
-            HStack {
-                Button("Cancel") {
-                    dismiss()
-                }
-
-                Button("Activate") {
-                    if appState.licenseService.activateKey(licenseKey) {
-                        dismiss()
-                    } else {
-                        errorMessage = "Invalid license key"
-                    }
-                }
-                .buttonStyle(.borderedProminent)
-            }
+            .frame(maxWidth: .infinity)
+            .padding()
+            .background(Color(NSColor.controlBackgroundColor))
+            .cornerRadius(12)
         }
-        .padding(40)
-        .frame(width: 400)
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - SettingRow
+
+struct SettingRow: View {
+    let icon: String
+    let title: String
+    let description: String
+    @Binding var isOn: Bool
+
+    var body: some View {
+        HStack(spacing: 16) {
+            // 图标
+            Image(systemName: icon)
+                .font(.title2)
+                .foregroundColor(.secondary)
+                .frame(width: 32)
+
+            // 标题和描述
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.body)
+                Text(description)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+
+            Spacer()
+
+            // Toggle 开关
+            Toggle("", isOn: $isOn)
+                .labelsHidden()
+        }
+        .padding(.horizontal)
+        .padding(.vertical, 12)
     }
 }
 
@@ -786,5 +1075,35 @@ struct CompactToggleStyle: ToggleStyle {
             }
         }
         .buttonStyle(.plain)
+    }
+}
+
+// MARK: - AudioFlowBox
+
+struct AudioFlowBox: View {
+    let icon: String
+    let label: String
+    let color: Color
+    var subtitle: String? = nil
+
+    var body: some View {
+        VStack(spacing: 4) {
+            Image(systemName: icon)
+                .font(.title2)
+                .foregroundColor(color)
+
+            Text(label)
+                .font(.body)
+
+            if let subtitle = subtitle {
+                Text(subtitle)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding()
+        .background(Color(NSColor.controlBackgroundColor))
+        .cornerRadius(12)
     }
 }

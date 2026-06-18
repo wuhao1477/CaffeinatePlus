@@ -19,7 +19,7 @@ class AppState: ObservableObject {
     @Published var restoreLastConfig: Bool = false
     @Published var showInDock: Bool = false
     @Published var autoActivateOnLaunch: Bool = false
-    @Published var showLicenseActivation: Bool = false
+    @Published private(set) var launchAtLoginEnabled: Bool = false
 
     // MARK: - Services
 
@@ -49,7 +49,7 @@ class AppState: ObservableObject {
             self?.toggle()
         }
 
-        // 检查授权状态
+        // 开源版本始终启用全部功能
         licenseService.checkLicense()
 
         // 从 UserDefaults 加载设置
@@ -83,12 +83,7 @@ class AppState: ObservableObject {
     func activate() {
         guard !isActive else { return }
 
-        // 检查授权
-        guard licenseService.state == .activated || licenseService.state == .trial else {
-            showLicenseActivation = true
-            logger.warning("Activation blocked: trial expired")
-            return
-        }
+        // 开源版本：移除授权检查，直接激活
 
         // 根据模式激活服务
         switch operationMode {
@@ -177,9 +172,11 @@ class AppState: ObservableObject {
         do {
             if service.status == .enabled {
                 try service.unregister()
+                launchAtLoginEnabled = false
                 logger.info("Launch at login disabled")
             } else {
                 try service.register()
+                launchAtLoginEnabled = true
                 logger.info("Launch at login enabled")
             }
         } catch {
@@ -220,6 +217,10 @@ class AppState: ObservableObject {
         restoreLastConfig = defaults.bool(forKey: "restoreLastConfig")
         showInDock = defaults.bool(forKey: "showInDock")
         autoActivateOnLaunch = defaults.bool(forKey: "autoActivateOnLaunch")
+
+        if #available(macOS 13.0, *) {
+            launchAtLoginEnabled = SMAppService.mainApp.status == .enabled
+        }
     }
 
     // MARK: - Private Methods（对齐原始应用）
@@ -251,13 +252,6 @@ class AppState: ObservableObject {
     // MARK: - Service Callbacks
 
     private func setupServiceCallbacks() {
-        // 订阅授权状态变化
-        licenseService.$state
-            .sink { [weak self] state in
-                self?.handleLicenseStateChange(state)
-            }
-            .store(in: &cancellables)
-
         // 订阅合盖状态变化（对齐原始应用）
         clamshellMonitor.$isClamshellClosed
             .sink { [weak self] isClosed in
@@ -291,18 +285,6 @@ class AppState: ObservableObject {
             self?.saveSettings()
         }
         .store(in: &cancellables)
-    }
-
-    private func handleLicenseStateChange(_ state: LicenseState) {
-        switch state {
-        case .welcome, .expired:
-            // 试用过期，停用服务
-            if isActive {
-                deactivate()
-            }
-        case .trial, .activated:
-            break
-        }
     }
 
     // MARK: - Cleanup
