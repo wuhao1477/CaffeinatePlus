@@ -112,12 +112,13 @@ final class ClamshellAutomation {
     Logger.shared.info("Auto mode: lid closed, activating...")
 
     let sleepSnapshot = sleep.snapshot
-    let preparedBeforeClose = preparedVirtualDisplayByAutomation
-    let shouldRemoveVirtualDisplay = preparedBeforeClose
+    var createdVirtualDisplayForClose = preparedVirtualDisplayByAutomation
 
     do {
-      guard virtualDisplay.displayID != 0 else {
-        throw CaffeinateError.configurationError("Prepare virtual display before closing the lid")
+      if virtualDisplay.displayID == 0 {
+        Logger.shared.info("Auto mode: creating virtual display after lid close")
+        try virtualDisplay.createDisplay(config: config)
+        createdVirtualDisplayForClose = true
       }
 
       try sleep.preventSystemSleepForClamshell()
@@ -135,7 +136,7 @@ final class ClamshellAutomation {
 
       session = ClamshellSession(
         wasAppActive: preparedWasAppActive ?? wasAppActive,
-        shouldRemoveVirtualDisplay: shouldRemoveVirtualDisplay,
+        shouldRemoveVirtualDisplay: createdVirtualDisplayForClose,
         sleepSnapshot: sleepSnapshot,
         displaySnapshot: displaySnapshot
       )
@@ -146,7 +147,7 @@ final class ClamshellAutomation {
       return true
     } catch {
       Logger.shared.error("Auto mode: lid close activation failed: \(error)")
-      if preparedBeforeClose {
+      if createdVirtualDisplayForClose {
         virtualDisplay.removeDisplay()
       }
       preparedVirtualDisplayByAutomation = false

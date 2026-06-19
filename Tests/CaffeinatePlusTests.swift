@@ -397,7 +397,7 @@ final class AppSceneTests: CaffeinatePlusTestCase {
 
 final class ClamshellAutomationTests: CaffeinatePlusTestCase {
 
-    func testLidCloseRequiresPreparedVirtualDisplay() throws {
+    func testLidCloseCreatesVirtualDisplayWhenNotPrepared() throws {
         let automation = ClamshellAutomation()
         var events: [String] = []
         let virtualDisplay = RecordingClamshellVirtualDisplay()
@@ -409,20 +409,34 @@ final class ClamshellAutomationTests: CaffeinatePlusTestCase {
         displayConfiguration.onEnterHeadlessMode = { _ in events.append("enterHeadlessMode") }
         let config = DisplayConfig(width: 1920, height: 1080, hiDPI: false)
 
-        XCTAssertThrowsError(
-            try automation.lidDidClose(
-                config: config,
-                wasAppActive: false,
-                virtualDisplay: virtualDisplay,
-                sleep: sleep,
-                displayConfiguration: displayConfiguration
-            )
+        let shouldMarkActive = try automation.lidDidClose(
+            config: config,
+            wasAppActive: false,
+            virtualDisplay: virtualDisplay,
+            sleep: sleep,
+            displayConfiguration: displayConfiguration
         )
 
-        XCTAssertEqual(virtualDisplay.createdConfigs, [])
-        XCTAssertEqual(sleep.preventSystemSleepCallCount, 0)
-        XCTAssertEqual(displayConfiguration.enteredVirtualDisplayIDs, [])
-        XCTAssertEqual(events, [])
+        XCTAssertTrue(shouldMarkActive)
+        XCTAssertEqual(virtualDisplay.createdConfigs, [config])
+        XCTAssertEqual(sleep.preventSystemSleepCallCount, 1)
+        XCTAssertEqual(displayConfiguration.enteredVirtualDisplayIDs, [virtualDisplay.displayID])
+        XCTAssertEqual(
+            events,
+            [
+                "createVirtualDisplay",
+                "preventSystemSleep",
+                "captureDisplayConfiguration",
+                "enterHeadlessMode",
+            ]
+        )
+
+        XCTAssertEqual(automation.lidDidOpen(
+            virtualDisplay: virtualDisplay,
+            sleep: sleep,
+            displayConfiguration: displayConfiguration
+        ), false)
+        XCTAssertEqual(virtualDisplay.removeCallCount, 1)
     }
 
     func testPrepareForLidCloseCreatesVirtualDisplayBeforeClamshellEvent() throws {
