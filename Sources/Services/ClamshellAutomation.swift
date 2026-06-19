@@ -81,17 +81,27 @@ final class ClamshellAutomation {
     Logger.shared.info("Auto mode: lid closed, activating...")
 
     let sleepSnapshot = sleep.snapshot
-    let displaySnapshot = displayConfiguration.captureDisplayConfiguration()
     let shouldRemoveVirtualDisplay = !virtualDisplay.isActive
     var createdVirtualDisplay = false
 
     do {
-      try sleep.preventSleep()
-
       if !virtualDisplay.isActive {
+        Logger.shared.info("Auto mode: creating virtual display for clamshell headless mode")
         try virtualDisplay.createDisplay(config: config)
         createdVirtualDisplay = true
       }
+
+      guard virtualDisplay.displayID != 0 else {
+        throw CaffeinateError.configurationError("Virtual display ID is unavailable after creation")
+      }
+
+      try sleep.preventSleep()
+      Logger.shared.info("Auto mode: sleep prevention enabled before display reconfiguration")
+
+      let displaySnapshot = displayConfiguration.captureDisplayConfiguration()
+      Logger.shared.info(
+        "Auto mode: captured displays \(displaySnapshot.displayIDs), virtualDisplayID=\(virtualDisplay.displayID)"
+      )
 
       try displayConfiguration.enterHeadlessMode(
         virtualDisplayID: virtualDisplay.displayID,
@@ -108,6 +118,7 @@ final class ClamshellAutomation {
       Logger.shared.info("Virtual display created. Sleep prevention enabled.")
       return true
     } catch {
+      Logger.shared.error("Auto mode: lid close activation failed: \(error)")
       if createdVirtualDisplay {
         virtualDisplay.removeDisplay()
       }

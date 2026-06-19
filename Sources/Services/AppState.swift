@@ -37,11 +37,13 @@ class AppState: ObservableObject {
   let systemMonitorService = SystemMonitorService()
   private let clamshellAutomation = ClamshellAutomation()
   private let clamshellDisplayConfiguration = ClamshellDisplayConfiguration()
+  private let clamshellPowerManagement = ClamshellPowerManagement()
 
   // MARK: - Private Properties
 
   private var cancellables = Set<AnyCancellable>()
   private let defaults = UserDefaults.standard
+  private var didShutdown = false
 
   // MARK: - Initialization
 
@@ -60,9 +62,11 @@ class AppState: ObservableObject {
     // 从 UserDefaults 加载设置
     loadSettings()
     applyAllSettings()
+    prepareAutomaticClamshellMode()
 
     // 设置服务回调
     setupServiceCallbacks()
+    setupTerminationCallback()
 
     // 自动激活（如果启用）
     if autoActivateOnLaunch {
@@ -334,6 +338,14 @@ class AppState: ObservableObject {
     NSApp.setActivationPolicy(showInDock ? .regular : .accessory)
   }
 
+  private func prepareAutomaticClamshellMode() {
+    do {
+      try clamshellPowerManagement.activateAutomaticClamshellProtection()
+    } catch {
+      logger.error("Failed to prepare automatic clamshell protection: \(error)")
+    }
+  }
+
   /// 处理合盖状态变化（对齐原始应用）
   private func handleClamshellChange(isClosed: Bool) {
     logger.debug("Clamshell state changed: \(isClosed ? "closed" : "open")")
@@ -369,6 +381,8 @@ class AppState: ObservableObject {
   private func setupServiceCallbacks() {
     // 订阅合盖状态变化（对齐原始应用）
     clamshellMonitor.$isClamshellClosed
+      .dropFirst()
+      .removeDuplicates()
       .sink { [weak self] isClosed in
         self?.handleClamshellChange(isClosed: isClosed)
       }
@@ -414,10 +428,26 @@ class AppState: ObservableObject {
     .store(in: &cancellables)
   }
 
+  private func setupTerminationCallback() {
+    NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)
+      .sink { [weak self] _ in
+        self?.shutdown()
+      }
+      .store(in: &cancellables)
+  }
+
+  func shutdown() {
+    guard !didShutdown else { return }
+    didShutdown = true
+
+    deactivate()
+    clamshellPowerManagement.deactivateAutomaticClamshellProtection()
+  }
+
   // MARK: - Cleanup
 
   deinit {
-    deactivate()
+    shutdown()
     cancellables.removeAll()
   }
 }

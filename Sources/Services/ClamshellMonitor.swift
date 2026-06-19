@@ -6,6 +6,24 @@ import Foundation
 import IOKit
 import IOKit.pwr_mgt
 
+struct ClamshellStateChange: Equatable {
+  let stateBits: UInt
+  let isClosed: Bool
+  let causesSleep: Bool
+}
+
+enum ClamshellPowerMessage {
+  static let stateChangeType: UInt32 = 0xE003_4100
+
+  static func parse(rawArgument: UInt) -> ClamshellStateChange {
+    ClamshellStateChange(
+      stateBits: rawArgument,
+      isClosed: (rawArgument & UInt(kClamshellStateBit)) != 0,
+      causesSleep: (rawArgument & UInt(kClamshellSleepBit)) != 0
+    )
+  }
+}
+
 class ClamshellMonitor: ObservableObject {
 
   // MARK: - Published Properties
@@ -76,7 +94,7 @@ class ClamshellMonitor: ObservableObject {
     }
 
     // 5. 初始状态检查
-    updateClamshellState()
+    refreshClamshellState()
 
     Logger.shared.info("Clamshell monitoring started")
   }
@@ -99,8 +117,8 @@ class ClamshellMonitor: ObservableObject {
     }
   }
 
-  /// 更新合盖状态
-  fileprivate func updateClamshellState() {
+  /// 从 IOKit 属性刷新合盖状态
+  fileprivate func refreshClamshellState() {
     guard rootDomainService != 0 else { return }
 
     // 读取 AppleClamshellState 属性
@@ -111,10 +129,20 @@ class ClamshellMonitor: ObservableObject {
       0
     )?.takeRetainedValue() as? Bool {
       DispatchQueue.main.async {
-        self.isClamshellClosed = clamshellState
-        Logger.shared.debug("Clamshell state: \(clamshellState ? "closed" : "open")")
+        self.updateClamshellState(isClosed: clamshellState, source: "registry")
       }
     }
+  }
+
+  /// 使用 IOPMrootDomain 消息参数更新合盖状态
+  fileprivate func updateClamshellState(isClosed: Bool, source: String) {
+    guard isClamshellClosed != isClosed else {
+      Logger.shared.debug("Clamshell state unchanged from \(source): \(isClosed ? "closed" : "open")")
+      return
+    }
+
+    isClamshellClosed = isClosed
+    Logger.shared.info("Clamshell state changed from \(source): \(isClosed ? "closed" : "open")")
   }
 }
 
@@ -131,8 +159,19 @@ private func clamshellCallback(
 
   let monitor = Unmanaged<ClamshellMonitor>.fromOpaque(refcon).takeUnretainedValue()
 
-  // kIOMessageClamshellStateChange = 0xE0000200
-  if messageType == 0xE000_0200 {
-    monitor.updateClamshellState()
+  guard messageType == ClamshellPowerMessage.stateChangeType else {
+    return
   }
+
+  guard let messageArgument else {
+    Logger.shared.warning("Clamshell message received without argument; refreshing registry state")
+    monitor.refreshClamshellState()
+    return
+  }
+
+  let change = ClamshellPowerMessage.parse(rawArgument: UInt(bitPattern: messageArgument))
+  Logger.shared.info(
+    "Clamshell message received: type=0x\(String(messageType, radix: 16)), bits=0x\(String(change.stateBits, radix: 16)), closed=\(change.isClosed), causesSleep=\(change.causesSleep)"
+  )
+  monitor.updateClamshellState(isClosed: change.isClosed, source: "message")
 }

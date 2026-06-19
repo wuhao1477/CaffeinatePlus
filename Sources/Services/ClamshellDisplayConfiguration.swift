@@ -5,7 +5,7 @@ import CoreGraphics
 import Foundation
 
 final class ClamshellDisplayConfiguration: ClamshellDisplayConfiguring {
-  typealias DisplayEnabledFunction = @convention(c) (CGDisplayConfigRef?, CGDirectDisplayID, Bool) -> CGError
+  typealias DisplayEnabledFunction = @convention(c) (CGDisplayConfigRef?, CGDirectDisplayID, Int32) -> CGError
 
   private let displayEnabled: DisplayEnabledFunction?
 
@@ -33,6 +33,10 @@ final class ClamshellDisplayConfiguration: ClamshellDisplayConfiguring {
     guard !builtinDisplays.isEmpty else {
       throw CaffeinateError.configurationError("No built-in display found for clamshell headless mode")
     }
+
+    Logger.shared.info(
+      "Entering clamshell headless mode: allDisplays=\(originalSnapshot.displayIDs), builtInDisplays=\(builtinDisplays.map(\.id)), virtualDisplayID=\(virtualDisplayID)"
+    )
 
     try applyDisplayTransaction { config in
       try configureDisplayEnabled(config, virtualDisplayID, true)
@@ -130,7 +134,8 @@ final class ClamshellDisplayConfiguration: ClamshellDisplayConfiguring {
       throw CaffeinateError.configurationError("Display enable API is unavailable")
     }
 
-    let error = displayEnabled(config, displayID, enabled)
+    Logger.shared.info("Configuring display \(displayID) enabled=\(enabled)")
+    let error = displayEnabled(config, displayID, enabled ? 1 : 0)
     guard error == .success else {
       throw CaffeinateError.configurationError(
         "Configure display enabled failed for \(displayID): \(error)"

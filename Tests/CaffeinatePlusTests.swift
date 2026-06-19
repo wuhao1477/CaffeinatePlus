@@ -392,7 +392,12 @@ final class ClamshellAutomationTests: CaffeinatePlusTestCase {
         XCTAssertEqual(displayConfiguration.enteredVirtualDisplayIDs, [virtualDisplay.displayID])
         XCTAssertEqual(
             events,
-            ["captureDisplayConfiguration", "preventSleep", "createVirtualDisplay", "enterHeadlessMode"]
+            [
+                "createVirtualDisplay",
+                "preventSleep",
+                "captureDisplayConfiguration",
+                "enterHeadlessMode",
+            ]
         )
     }
 
@@ -520,15 +525,99 @@ final class ClamshellDisplayConfigurationTests: CaffeinatePlusTestCase {
         XCTAssertTrue(source.contains("SLSConfigureDisplayEnabled"))
         XCTAssertTrue(source.contains("/System/Library/PrivateFrameworks/SkyLight.framework/SkyLight"))
         XCTAssertTrue(source.contains("/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics"))
-        XCTAssertTrue(source.contains("@convention(c) (CGDisplayConfigRef?, CGDirectDisplayID, Bool) -> CGError"))
+        XCTAssertTrue(source.contains("@convention(c) (CGDisplayConfigRef?, CGDirectDisplayID, Int32) -> CGError"))
         XCTAssertTrue(source.contains("CGDisplayIsBuiltin"))
         XCTAssertTrue(source.contains("No built-in display found for clamshell headless mode"))
         XCTAssertTrue(source.contains("configureDisplayEnabled(config, display.id, true)"))
         XCTAssertTrue(source.contains("configureDisplayEnabled(config, display.id, false)"))
-        XCTAssertTrue(source.contains("configureDisplayEnabled(config, virtualDisplayID, true)"))
+        XCTAssertTrue(source.contains("displayEnabled(config, displayID, enabled ? 1 : 0)"))
         XCTAssertTrue(source.contains("try configureDisplayOrigin(config, virtualDisplayID, 0, 0)"))
         XCTAssertTrue(source.contains("try configureDisplayMirror(config, virtualDisplayID, kCGNullDirectDisplay)"))
         XCTAssertTrue(source.contains("try configureDisplayMode(config, display.id, display.mode)"))
+    }
+}
+
+final class ClamshellMonitorTests: CaffeinatePlusTestCase {
+
+    func testClamshellMessageParserUsesStateAndSleepBits() {
+        XCTAssertEqual(
+            ClamshellPowerMessage.parse(rawArgument: 0),
+            ClamshellStateChange(stateBits: 0, isClosed: false, causesSleep: false)
+        )
+        XCTAssertEqual(
+            ClamshellPowerMessage.parse(rawArgument: 1),
+            ClamshellStateChange(stateBits: 1, isClosed: true, causesSleep: false)
+        )
+        XCTAssertEqual(
+            ClamshellPowerMessage.parse(rawArgument: 3),
+            ClamshellStateChange(stateBits: 3, isClosed: true, causesSleep: true)
+        )
+    }
+
+    func testMonitorUsesSystemClamshellMessageAndArgumentBits() throws {
+        let rootURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let source = try String(
+            contentsOf: rootURL
+                .appendingPathComponent("Sources")
+                .appendingPathComponent("Services")
+                .appendingPathComponent("ClamshellMonitor.swift"),
+            encoding: .utf8
+        )
+
+        XCTAssertTrue(source.contains("stateChangeType: UInt32 = 0xE003_4100"))
+        XCTAssertTrue(source.contains("kClamshellStateBit"))
+        XCTAssertTrue(source.contains("kClamshellSleepBit"))
+        XCTAssertTrue(source.contains("updateClamshellState(isClosed:"))
+        XCTAssertFalse(source.contains("0xE000_0200"))
+    }
+}
+
+final class ClamshellPowerManagementTests: CaffeinatePlusTestCase {
+
+    func testPowerManagementUsesProcessLifetimeClamshellProtection() throws {
+        let rootURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let source = try String(
+            contentsOf: rootURL
+                .appendingPathComponent("Sources")
+                .appendingPathComponent("Services")
+                .appendingPathComponent("ClamshellPowerManagement.swift"),
+            encoding: .utf8
+        )
+
+        XCTAssertTrue(source.contains("activateAutomaticClamshellProtection"))
+        XCTAssertTrue(source.contains("deactivateAutomaticClamshellProtection"))
+        XCTAssertTrue(source.contains("automaticProtectionSnapshot"))
+        XCTAssertTrue(source.contains("private var powerConnection"))
+        XCTAssertTrue(source.contains("let connection = try openPowerManagementConnection()"))
+        XCTAssertTrue(source.contains("try setClamshellSleepDisabled(true, connection: connection)"))
+        XCTAssertTrue(source.contains("try setClamshellSleepDisabled(false, connection: powerConnection)"))
+        XCTAssertTrue(source.contains("IOServiceClose(powerConnection)"))
+        XCTAssertTrue(source.contains("kPMSetClamshellSleepStateSelector: UInt32 = 12"))
+    }
+
+    func testAppStatePreparesClamshellProtectionBeforeLidEvents() throws {
+        let rootURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let source = try String(
+            contentsOf: rootURL
+                .appendingPathComponent("Sources")
+                .appendingPathComponent("Services")
+                .appendingPathComponent("AppState.swift"),
+            encoding: .utf8
+        )
+
+        XCTAssertTrue(source.contains("prepareAutomaticClamshellMode()"))
+        XCTAssertTrue(source.contains("setupTerminationCallback()"))
+        XCTAssertTrue(source.contains("NSApplication.willTerminateNotification"))
+        XCTAssertTrue(source.contains("func shutdown()"))
+        XCTAssertTrue(source.contains("clamshellPowerManagement.activateAutomaticClamshellProtection()"))
+        XCTAssertTrue(source.contains("clamshellPowerManagement.deactivateAutomaticClamshellProtection()"))
+        XCTAssertFalse(source.contains("power: clamshellPowerManagement"))
     }
 }
 
