@@ -108,6 +108,7 @@
 "unknown_error" = "发生未知错误";
 "virtual_display_api_unavailable_error" = "此系统不可用虚拟显示器 API。需要 macOS 13.0+ 和私有框架访问权限。";
 "virtual_display_create_failed_error" = "创建虚拟显示器失败：%@";
+"virtual_display_apply_settings_failed_error" = "应用虚拟显示器设置失败。";
 "virtual_display" = "虚拟显示器";
 "virtual_display_active" = "虚拟显示器已启用";
 "virtual_display_description" = "创建虚拟显示器";

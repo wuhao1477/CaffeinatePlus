@@ -257,13 +257,13 @@ extension View {
     title: String,
     message: String,
     isPresented: Binding<Bool>,
-    confirmTitle: String = NSLocalizedString("confirm", bundle: .module, comment: ""),
+    confirmTitle: String = AppLocalization.localized("confirm"),
     confirmRole: ButtonRole? = nil,
     onConfirm: @escaping () -> Void
   ) -> some View {
     self.alert(title, isPresented: isPresented) {
       Button(confirmTitle, role: confirmRole, action: onConfirm)
-      Button(NSLocalizedString("cancel", bundle: .module, comment: ""), role: .cancel) {}
+      Button(AppLocalization.localized("cancel"), role: .cancel) {}
     } message: {
       Text(message)
     }

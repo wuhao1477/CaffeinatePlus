@@ -46,13 +46,13 @@ extension OperationMode {
   var description: String {
     switch self {
     case .preventSleep:
-      return NSLocalizedString("keep_mac_awake_description", bundle: .module, comment: "")
+      return AppLocalization.localized("keep_mac_awake_description")
     case .virtualDisplay:
-      return NSLocalizedString("virtual_display_description", bundle: .module, comment: "")
+      return AppLocalization.localized("virtual_display_description")
     case .audioRouting:
-      return NSLocalizedString("audio_routing_description", bundle: .module, comment: "")
+      return AppLocalization.localized("audio_routing_description")
     case .combined:
-      return NSLocalizedString("combined_mode_description", bundle: .module, comment: "")
+      return AppLocalization.localized("combined_mode_description")
     }
   }
 
@@ -116,40 +116,39 @@ enum CaffeinateError: LocalizedError {
   var errorDescription: String? {
     switch self {
     case .sleepServiceFailed(let reason):
-      let format = NSLocalizedString("sleep_service_failed_error", bundle: .module, comment: "")
+      let format = AppLocalization.localized("sleep_service_failed_error")
       return String(format: format, reason)
     case .virtualDisplayFailed(let reason):
-      let format = NSLocalizedString(
-        "virtual_display_create_failed_error", bundle: .module, comment: "")
+      let format = AppLocalization.localized("virtual_display_create_failed_error")
       return String(format: format, reason)
     case .audioRoutingFailed(let reason):
-      let format = NSLocalizedString("audio_routing_failed_error", bundle: .module, comment: "")
+      let format = AppLocalization.localized("audio_routing_failed_error")
       return String(format: format, reason)
     case .permissionDenied(let permission):
-      let format = NSLocalizedString("permission_denied_error", bundle: .module, comment: "")
+      let format = AppLocalization.localized("permission_denied_error")
       return String(format: format, permission)
     case .configurationError(let message):
-      let format = NSLocalizedString("configuration_error", bundle: .module, comment: "")
+      let format = AppLocalization.localized("configuration_error")
       return String(format: format, message)
     case .unknownError:
-      return NSLocalizedString("unknown_error", bundle: .module, comment: "")
+      return AppLocalization.localized("unknown_error")
     }
   }
 
   var recoverySuggestion: String? {
     switch self {
     case .sleepServiceFailed:
-      return NSLocalizedString("recovery_sleep_service_failed", bundle: .module, comment: "")
+      return AppLocalization.localized("recovery_sleep_service_failed")
     case .virtualDisplayFailed:
-      return NSLocalizedString("recovery_virtual_display_failed", bundle: .module, comment: "")
+      return AppLocalization.localized("recovery_virtual_display_failed")
     case .audioRoutingFailed:
-      return NSLocalizedString("recovery_audio_routing_failed", bundle: .module, comment: "")
+      return AppLocalization.localized("recovery_audio_routing_failed")
     case .permissionDenied:
-      return NSLocalizedString("recovery_permission_denied", bundle: .module, comment: "")
+      return AppLocalization.localized("recovery_permission_denied")
     case .configurationError:
-      return NSLocalizedString("recovery_configuration_error", bundle: .module, comment: "")
+      return AppLocalization.localized("recovery_configuration_error")
     case .unknownError:
-      return NSLocalizedString("recovery_unknown_error", bundle: .module, comment: "")
+      return AppLocalization.localized("recovery_unknown_error")
     }
   }
 }
@@ -264,7 +263,7 @@ struct SizePreferenceKey: PreferenceKey {
 extension String {
   /// 安全的本地化
   var localized: String {
-    NSLocalizedString(self, comment: "")
+    AppLocalization.localized(self)
   }
 
   func localized(with arguments: CVarArg...) -> String {
@@ -307,6 +306,10 @@ extension Bundle {
 
   var fullVersion: String {
     "\(appVersion) (\(buildNumber))"
+  }
+
+  var footerVersionText: String {
+    "v\(fullVersion)"
   }
 }
 

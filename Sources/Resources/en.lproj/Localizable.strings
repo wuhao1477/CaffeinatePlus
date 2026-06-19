@@ -108,6 +108,7 @@
 "unknown_error" = "Unknown error occurred";
 "virtual_display_api_unavailable_error" = "Virtual display API is not available on this system. Requires macOS 13.0+ and private framework access.";
 "virtual_display_create_failed_error" = "Failed to create virtual display: %@";
+"virtual_display_apply_settings_failed_error" = "Failed to apply virtual display settings.";
 "virtual_display" = "Virtual Display";
 "virtual_display_active" = "Virtual Display Active";
 "virtual_display_description" = "Create a virtual display";

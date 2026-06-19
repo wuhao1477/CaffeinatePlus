@@ -224,18 +224,31 @@ import AppKit
 
 ### 私有 API 声明
 
-`VirtualDisplayService.swift` 中的私有 API 需要：
+`VirtualDisplayService.swift` 使用 CoreGraphics 中的私有 Objective-C 类，不链接
+`DisplayServices.framework`，也不调用 `CGVirtualDisplayCreate` C 函数。
 
-1. **运行时链接**:
-   ```bash
-   -Xlinker -F/System/Library/PrivateFrameworks
-   -framework DisplayServices
-   ```
+当前复刻的调用链：
 
-2. **或者动态加载**:
-   ```swift
-   let handle = dlopen("/System/Library/PrivateFrameworks/DisplayServices.framework/DisplayServices", RTLD_NOW)
-   ```
+```swift
+CGVirtualDisplayMode.init(width:height:refreshRate:)
+CGVirtualDisplayDescriptor.setMaxPixelsWide(_:)
+CGVirtualDisplayDescriptor.setMaxPixelsHigh(_:)
+CGVirtualDisplayDescriptor.setSizeInMillimeters(_:_:)
+CGVirtualDisplayDescriptor.setTerminationHandler(_:)
+CGVirtualDisplay.init(descriptor:)
+CGVirtualDisplaySettings.setHiDPI(_:)
+CGVirtualDisplaySettings.setModes(_:)
+CGVirtualDisplay.applySettings(_:)
+```
+
+打包签名必须包含：
+
+```xml
+<key>com.apple.security.temporary-exception.mach-lookup.global-name</key>
+<array>
+  <string>com.apple.VirtualDisplay</string>
+</array>
+```
 
 ---
 

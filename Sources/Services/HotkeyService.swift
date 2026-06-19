@@ -77,20 +77,11 @@ class HotkeyService {
     // 先显示友好的提示对话框
     DispatchQueue.main.async {
       let alert = NSAlert()
-      alert.messageText = NSLocalizedString(
-        "accessibility_permission_title",
-        bundle: .module,
-        comment: ""
-      )
-      alert.informativeText = NSLocalizedString(
-        "accessibility_permission_body",
-        bundle: .module,
-        comment: ""
-      )
+      alert.messageText = AppLocalization.localized("accessibility_permission_title")
+      alert.informativeText = AppLocalization.localized("accessibility_permission_body")
       alert.alertStyle = .informational
-      alert.addButton(
-        withTitle: NSLocalizedString("open_system_settings", bundle: .module, comment: ""))
-      alert.addButton(withTitle: NSLocalizedString("later", bundle: .module, comment: ""))
+      alert.addButton(withTitle: AppLocalization.localized("open_system_settings"))
+      alert.addButton(withTitle: AppLocalization.localized("later"))
 
       let response = alert.runModal()
 

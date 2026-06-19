@@ -35,6 +35,7 @@ class AppState: ObservableObject {
   let hotkeyService: HotkeyService
   let notificationService = NotificationService()
   let systemMonitorService = SystemMonitorService()
+  private let clamshellAutomation = ClamshellAutomation()
 
   // MARK: - Private Properties
 
@@ -214,10 +215,11 @@ class AppState: ObservableObject {
   func setLanguage(_ newLanguage: AppLanguage) {
     language = newLanguage
     applyLanguageSetting()
+    saveSettings()
   }
 
   func localized(_ key: String) -> String {
-    NSLocalizedString(key, bundle: .module, comment: "")
+    AppLocalization.localized(key, language: language)
   }
 
   // MARK: - Settings Persistence
@@ -329,12 +331,27 @@ class AppState: ObservableObject {
   private func handleClamshellChange(isClosed: Bool) {
     logger.debug("Clamshell state changed: \(isClosed ? "closed" : "open")")
 
-    if isClosed && isActive {
-      // 合盖时确保防睡眠仍然生效
-      logger.info("Clamshell closed, reinforcing sleep prevention")
+    if isClosed {
+      do {
+        isActive = try clamshellAutomation.lidDidClose(
+          config: displayConfig,
+          wasAppActive: isActive,
+          virtualDisplay: virtualDisplayService,
+          sleep: sleepService
+        )
+        updateActiveState()
+      } catch {
+        reportActivationFailure(error.localizedDescription)
+      }
+      return
+    }
 
-      // 重新应用防睡眠断言
-      try? sleepService.preventSleep()
+    if let active = clamshellAutomation.lidDidOpen(
+      virtualDisplay: virtualDisplayService,
+      sleep: sleepService
+    ) {
+      isActive = active
+      updateActiveState()
     }
   }
 
@@ -410,10 +427,10 @@ enum OperationMode: String, Codable, Hashable, CaseIterable {
 
   func displayName(language: AppLanguage) -> String {
     switch self {
-    case .preventSleep: return NSLocalizedString("prevent_sleep", bundle: .module, comment: "")
-    case .virtualDisplay: return NSLocalizedString("virtual_display", bundle: .module, comment: "")
-    case .audioRouting: return NSLocalizedString("audio_routing", bundle: .module, comment: "")
-    case .combined: return NSLocalizedString("combined_mode", bundle: .module, comment: "")
+    case .preventSleep: return AppLocalization.localized("prevent_sleep", language: language)
+    case .virtualDisplay: return AppLocalization.localized("virtual_display", language: language)
+    case .audioRouting: return AppLocalization.localized("audio_routing", language: language)
+    case .combined: return AppLocalization.localized("combined_mode", language: language)
     }
   }
 }

@@ -310,15 +310,15 @@ enum AudioServiceError: LocalizedError {
   var errorDescription: String? {
     switch self {
     case .driverNotInstalled:
-      return NSLocalizedString("blackhole_not_installed_error", bundle: .module, comment: "")
+      return AppLocalization.localized("blackhole_not_installed_error")
     case .cannotGetDefaultDevice:
-      return NSLocalizedString("cannot_get_default_device_error", bundle: .module, comment: "")
+      return AppLocalization.localized("cannot_get_default_device_error")
     case .cannotSetDefaultDevice:
-      return NSLocalizedString("cannot_set_default_device_error", bundle: .module, comment: "")
+      return AppLocalization.localized("cannot_set_default_device_error")
     case .cannotGetDeviceUID:
-      return NSLocalizedString("cannot_get_device_uid_error", bundle: .module, comment: "")
+      return AppLocalization.localized("cannot_get_device_uid_error")
     case .cannotCreateAggregateDevice:
-      return NSLocalizedString("cannot_create_aggregate_device_error", bundle: .module, comment: "")
+      return AppLocalization.localized("cannot_create_aggregate_device_error")
     }
   }
 }

@@ -23,6 +23,14 @@ enum AppLanguage: String, CaseIterable, Codable, Hashable {
     case .simplifiedChinese: return ["zh-Hans"]
     }
   }
+
+  var lprojName: String? {
+    switch self {
+    case .system: return nil
+    case .english: return "en"
+    case .simplifiedChinese: return "zh-hans"
+    }
+  }
 }
 
 enum AppTheme: String, CaseIterable, Codable, Hashable {

@@ -63,7 +63,7 @@ struct PopoverHeaderView: View {
         Circle()
           .fill(appState.isActive ? Color.green : Color.orange)
           .frame(width: 8, height: 8)
-        Text(appState.isActive ? "active" : "idle", bundle: .module)
+        Text(appState.localized(appState.isActive ? "active" : "idle"))
           .font(.system(size: 13, weight: .regular))
           .foregroundColor(.secondary)
       }
@@ -83,7 +83,7 @@ struct PopoverFooterView: View {
       HStack(spacing: 6) {
         Image(systemName: "clock")
           .font(.system(size: 11))
-        Text("open_source", bundle: .module)
+        Text(Bundle.main.footerVersionText)
           .font(.system(size: 12, weight: .regular))
       }
       .foregroundColor(.orange)
@@ -95,7 +95,7 @@ struct PopoverFooterView: View {
         label: {
           HStack(spacing: 5) {
             Image(systemName: "power")
-            Text("quit", bundle: .module)
+            Text(appState.localized("quit"))
           }
           .font(.system(size: 12, weight: .semibold))
           .foregroundColor(.secondary)
@@ -144,7 +144,7 @@ struct PopoverTabButton: View {
         Image(systemName: tab.icon)
           .font(.system(size: 23, weight: .regular))
 
-        Text(LocalizedStringKey(tab.titleKey), bundle: .module)
+        Text(appState.localized(tab.titleKey))
           .font(.system(size: 11, weight: .regular))
       }
       .frame(maxWidth: .infinity)
@@ -225,9 +225,9 @@ struct AwakeTabView: View {
           .frame(width: 60, height: 60)
 
         VStack(alignment: .leading) {
-          Text("prevent_sleep", bundle: .module)
+          Text(appState.localized("prevent_sleep"))
             .font(.headline)
-          Text(appState.isActive ? "active" : "inactive", bundle: .module)
+          Text(appState.localized(appState.isActive ? "active" : "inactive"))
             .font(.subheadline)
             .foregroundColor(.secondary)
         }
@@ -251,23 +251,23 @@ struct AwakeTabView: View {
 
   private var optionsSection: some View {
     VStack(alignment: .leading, spacing: 12) {
-      Text("options", bundle: .module)
+      Text(appState.localized("options"))
         .font(.headline)
 
       Toggle(
-        NSLocalizedString("prevent_display_sleep", bundle: .module, comment: ""),
+        appState.localized("prevent_display_sleep"),
         isOn: Binding(
           get: { appState.sleepService.preventDisplaySleep },
           set: { appState.setPreventDisplaySleep($0) }
         ))
       Toggle(
-        NSLocalizedString("prevent_system_sleep", bundle: .module, comment: ""),
+        appState.localized("prevent_system_sleep"),
         isOn: Binding(
           get: { appState.sleepService.preventSystemSleep },
           set: { appState.setPreventSystemSleep($0) }
         ))
       Toggle(
-        NSLocalizedString("auto_activate_launch", bundle: .module, comment: ""),
+        appState.localized("auto_activate_launch"),
         isOn: $appState.autoActivateOnLaunch)
     }
     .padding()
@@ -864,7 +864,7 @@ struct SettingsTabView: View {
 
   private var generalSettings: some View {
     VStack(alignment: .leading, spacing: 12) {
-      Text("general", bundle: .module)
+      Text(appState.localized("general"))
         .font(.system(size: 13, weight: .bold))
         .foregroundColor(.secondary)
 
@@ -937,7 +937,7 @@ struct SettingsTabView: View {
 
   private var appearanceSettings: some View {
     VStack(alignment: .leading, spacing: 12) {
-      Text("appearance", bundle: .module)
+      Text(appState.localized("appearance"))
         .font(.system(size: 13, weight: .bold))
         .foregroundColor(.secondary)
 
@@ -951,7 +951,7 @@ struct SettingsTabView: View {
             )
           ) {
             ForEach(AppLanguage.allCases, id: \.self) { language in
-              Text(LocalizedStringKey(language.titleKey), bundle: .module)
+              Text(appState.localized(language.titleKey))
                 .tag(language)
             }
           }
@@ -959,7 +959,7 @@ struct SettingsTabView: View {
           .frame(width: 145)
         }
 
-        Text("language_restart_hint", bundle: .module)
+        Text(appState.localized("language_restart_hint"))
           .font(.system(size: 11))
           .foregroundColor(.secondary)
           .frame(maxWidth: .infinity, alignment: .leading)
@@ -970,9 +970,9 @@ struct SettingsTabView: View {
 
         pickerRow(icon: "circle.lefthalf.filled", title: appState.localized("theme")) {
           Picker("", selection: $appState.theme) {
-            Text("system", bundle: .module).tag(AppTheme.system)
-            Text("light", bundle: .module).tag(AppTheme.light)
-            Text("dark", bundle: .module).tag(AppTheme.dark)
+            Text(appState.localized("system")).tag(AppTheme.system)
+            Text(appState.localized("light")).tag(AppTheme.light)
+            Text(appState.localized("dark")).tag(AppTheme.dark)
           }
           .labelsHidden()
           .frame(width: 145)
@@ -983,12 +983,12 @@ struct SettingsTabView: View {
 
   private var aboutSection: some View {
     VStack(alignment: .leading, spacing: 12) {
-      Text("about", bundle: .module)
+      Text(appState.localized("about"))
         .font(.system(size: 13, weight: .bold))
         .foregroundColor(.secondary)
 
       VStack(spacing: 0) {
-        aboutRow(title: "CaffeinatePlus", value: "v2.0.0")
+        aboutRow(title: "CaffeinatePlus", value: Bundle.main.footerVersionText)
         Divider().padding(.leading, 46)
         aboutRow(
           title: appState.localized("license"), value: appState.licenseService.state.displayText,

@@ -9,12 +9,22 @@ DIST_DIR="$ROOT_DIR/dist"
 SCRATCH_DIR="$DIST_DIR/.build"
 APP_BUNDLE="$DIST_DIR/$APP_NAME.app"
 DMG_ROOT="$DIST_DIR/dmg-root"
+ENTITLEMENTS_FILE="$ROOT_DIR/Configuration/CaffeinatePlus.entitlements"
+VERSION_FILE="$ROOT_DIR/VERSION"
 
 ref_name="${GITHUB_REF_NAME:-}"
 if [[ "$ref_name" =~ ^v[0-9]+\.[0-9]+\.[0-9]+.*$ ]]; then
   app_version="${ref_name#v}"
+elif [[ -f "$VERSION_FILE" ]]; then
+  app_version="$(tr -d '[:space:]' < "$VERSION_FILE")"
 else
-  app_version="0.0.0"
+  echo "Missing VERSION file and release tag" >&2
+  exit 1
+fi
+
+if [[ ! "$app_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+([-.+][A-Za-z0-9.-]+)?$ ]]; then
+  echo "Invalid app version: $app_version" >&2
+  exit 1
 fi
 
 build_number="$(git -C "$ROOT_DIR" rev-list --count HEAD 2>/dev/null || date +%Y%m%d%H%M%S)"
@@ -66,7 +76,7 @@ cat > "$APP_BUNDLE/Contents/Info.plist" <<PLIST
 </plist>
 PLIST
 
-codesign --force --deep --sign - "$APP_BUNDLE"
+codesign --force --deep --sign - --entitlements "$ENTITLEMENTS_FILE" "$APP_BUNDLE"
 
 cp -R "$APP_BUNDLE" "$DMG_ROOT/"
 ln -s /Applications "$DMG_ROOT/Applications"
