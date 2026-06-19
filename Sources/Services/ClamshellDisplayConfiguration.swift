@@ -40,7 +40,6 @@ final class ClamshellDisplayConfiguration: ClamshellDisplayConfiguring {
 
     try applyDisplayTransaction { config in
       try configureDisplayEnabled(config, virtualDisplayID, true)
-      try configureDisplayOrigin(config, virtualDisplayID, 0, 0)
 
       for display in builtinDisplays {
         try configureDisplayEnabled(config, display.id, false)
