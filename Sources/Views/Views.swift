@@ -951,6 +951,17 @@ struct SettingsTabView: View {
         Divider().padding(.leading, 46)
 
         settingRow(
+          icon: "laptopcomputer.and.arrow.down",
+          title: appState.localized("automatic_clamshell_virtual_display"),
+          subtitle: appState.localized("automatic_clamshell_virtual_display_subtitle"),
+          isOn: Binding(
+            get: { appState.automaticClamshellVirtualDisplayEnabled },
+            set: { appState.setAutomaticClamshellVirtualDisplayEnabled($0) }
+          )
+        )
+        Divider().padding(.leading, 46)
+
+        settingRow(
           icon: "keyboard",
           title: appState.localized("global_hotkey"),
           subtitle: appState.localized("global_hotkey_subtitle"),

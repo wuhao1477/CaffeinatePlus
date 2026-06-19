@@ -362,6 +362,29 @@ final class AppIconTests: CaffeinatePlusTestCase {
     }
 }
 
+// MARK: - App Scene Tests
+
+final class AppSceneTests: CaffeinatePlusTestCase {
+
+    func testReleaseBuildExposesMainWindowAndSettingsScene() throws {
+        let rootURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let source = try String(
+            contentsOf: rootURL
+                .appendingPathComponent("Sources")
+                .appendingPathComponent("App")
+                .appendingPathComponent("CaffeinatePlusApp.swift"),
+            encoding: .utf8
+        )
+
+        XCTAssertTrue(source.contains("WindowGroup"))
+        XCTAssertTrue(source.contains("Settings {"))
+        XCTAssertTrue(source.contains("SettingsTabView()"))
+        XCTAssertFalse(source.contains("#if DEBUG"))
+    }
+}
+
 // MARK: - Clamshell Automation Tests
 
 final class ClamshellAutomationTests: CaffeinatePlusTestCase {
@@ -608,9 +631,51 @@ final class ClamshellPowerManagementTests: CaffeinatePlusTestCase {
         XCTAssertTrue(source.contains("setupTerminationCallback()"))
         XCTAssertTrue(source.contains("NSApplication.willTerminateNotification"))
         XCTAssertTrue(source.contains("func shutdown()"))
+        XCTAssertTrue(source.contains("@Published var automaticClamshellVirtualDisplayEnabled"))
+        XCTAssertTrue(source.contains("setAutomaticClamshellVirtualDisplayEnabled"))
+        XCTAssertTrue(source.contains("automaticClamshellVirtualDisplayEnabled = boolSetting"))
+        XCTAssertTrue(source.contains("defaults.set("))
+        XCTAssertTrue(source.contains("forKey: \"automaticClamshellVirtualDisplayEnabled\""))
+        XCTAssertTrue(source.contains("guard automaticClamshellVirtualDisplayEnabled else"))
         XCTAssertTrue(source.contains("clamshellPowerManagement.activateAutomaticClamshellProtection()"))
         XCTAssertTrue(source.contains("clamshellPowerManagement.deactivateAutomaticClamshellProtection()"))
         XCTAssertFalse(source.contains("power: clamshellPowerManagement"))
+    }
+
+    func testSettingsExposeAutomaticClamshellVirtualDisplaySwitch() throws {
+        let rootURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let views = try String(
+            contentsOf: rootURL
+                .appendingPathComponent("Sources")
+                .appendingPathComponent("Views")
+                .appendingPathComponent("Views.swift"),
+            encoding: .utf8
+        )
+        let zh = try String(
+            contentsOf: rootURL
+                .appendingPathComponent("Sources")
+                .appendingPathComponent("Resources")
+                .appendingPathComponent("zh-Hans.lproj")
+                .appendingPathComponent("Localizable.strings"),
+            encoding: .utf8
+        )
+        let en = try String(
+            contentsOf: rootURL
+                .appendingPathComponent("Sources")
+                .appendingPathComponent("Resources")
+                .appendingPathComponent("en.lproj")
+                .appendingPathComponent("Localizable.strings"),
+            encoding: .utf8
+        )
+
+        XCTAssertTrue(views.contains("automatic_clamshell_virtual_display"))
+        XCTAssertTrue(views.contains("setAutomaticClamshellVirtualDisplayEnabled"))
+        XCTAssertTrue(zh.contains("\"automatic_clamshell_virtual_display\" = \"合盖自动虚拟显示器\";"))
+        XCTAssertTrue(zh.contains("\"automatic_clamshell_virtual_display_subtitle\" = \"合盖后自动创建虚拟显示器并保持唤醒\";"))
+        XCTAssertTrue(en.contains("\"automatic_clamshell_virtual_display\" = \"Auto Virtual Display on Lid Close\";"))
+        XCTAssertTrue(en.contains("\"automatic_clamshell_virtual_display_subtitle\" = \"Create a virtual display and keep the Mac awake after lid close\";"))
     }
 }
 

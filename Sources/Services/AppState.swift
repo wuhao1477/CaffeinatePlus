@@ -17,6 +17,7 @@ class AppState: ObservableObject {
   @Published var notificationsEnabled: Bool = true
   @Published var hotkeyEnabled: Bool = true
   @Published var restoreLastConfig: Bool = false
+  @Published var automaticClamshellVirtualDisplayEnabled: Bool = true
   @Published var showInDock: Bool = false
   @Published var autoActivateOnLaunch: Bool = false
   @Published var language: AppLanguage = .system
@@ -62,7 +63,9 @@ class AppState: ObservableObject {
     // 从 UserDefaults 加载设置
     loadSettings()
     applyAllSettings()
-    prepareAutomaticClamshellMode()
+    if automaticClamshellVirtualDisplayEnabled {
+      prepareAutomaticClamshellMode()
+    }
 
     // 设置服务回调
     setupServiceCallbacks()
@@ -223,6 +226,27 @@ class AppState: ObservableObject {
     applyDockSetting()
   }
 
+  func setAutomaticClamshellVirtualDisplayEnabled(_ enabled: Bool) {
+    guard automaticClamshellVirtualDisplayEnabled != enabled else { return }
+    automaticClamshellVirtualDisplayEnabled = enabled
+
+    if enabled {
+      prepareAutomaticClamshellMode()
+    } else {
+      if let active = clamshellAutomation.lidDidOpen(
+        virtualDisplay: virtualDisplayService,
+        sleep: sleepService,
+        displayConfiguration: clamshellDisplayConfiguration
+      ) {
+        isActive = active
+        updateActiveState()
+      }
+      clamshellPowerManagement.deactivateAutomaticClamshellProtection()
+    }
+
+    saveSettings()
+  }
+
   func setLanguage(_ newLanguage: AppLanguage) {
     language = newLanguage
     applyLanguageSetting()
@@ -246,6 +270,10 @@ class AppState: ObservableObject {
     defaults.set(notificationsEnabled, forKey: "notificationsEnabled")
     defaults.set(hotkeyEnabled, forKey: "hotkeyEnabled")
     defaults.set(restoreLastConfig, forKey: "restoreLastConfig")
+    defaults.set(
+      automaticClamshellVirtualDisplayEnabled,
+      forKey: "automaticClamshellVirtualDisplayEnabled"
+    )
     defaults.set(showInDock, forKey: "showInDock")
     defaults.set(autoActivateOnLaunch, forKey: "autoActivateOnLaunch")
     defaults.set(language.rawValue, forKey: "language")
@@ -268,6 +296,10 @@ class AppState: ObservableObject {
     notificationsEnabled = boolSetting("notificationsEnabled", defaultValue: true)
     hotkeyEnabled = boolSetting("hotkeyEnabled", defaultValue: true)
     restoreLastConfig = boolSetting("restoreLastConfig", defaultValue: false)
+    automaticClamshellVirtualDisplayEnabled = boolSetting(
+      "automaticClamshellVirtualDisplayEnabled",
+      defaultValue: true
+    )
     showInDock = boolSetting("showInDock", defaultValue: false)
     autoActivateOnLaunch = boolSetting("autoActivateOnLaunch", defaultValue: false)
     language = AppLanguage(rawValue: defaults.string(forKey: "language") ?? "") ?? .system
@@ -349,6 +381,11 @@ class AppState: ObservableObject {
   /// 处理合盖状态变化（对齐原始应用）
   private func handleClamshellChange(isClosed: Bool) {
     logger.debug("Clamshell state changed: \(isClosed ? "closed" : "open")")
+
+    guard automaticClamshellVirtualDisplayEnabled else {
+      logger.debug("Automatic clamshell virtual display is disabled")
+      return
+    }
 
     if isClosed {
       do {

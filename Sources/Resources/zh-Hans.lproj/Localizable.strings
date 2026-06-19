@@ -17,6 +17,8 @@
 "audio_routing_failed_error" = "音频路由失败：%@";
 "auto_activate_launch" = "启动后自动启用";
 "auto_activate_launch_subtitle" = "启动后自动启用防睡眠";
+"automatic_clamshell_virtual_display" = "合盖自动虚拟显示器";
+"automatic_clamshell_virtual_display_subtitle" = "合盖后自动创建虚拟显示器并保持唤醒";
 "battery" = "电池";
 "blackhole_required_body" = "需要 BlackHole 虚拟音频驱动，才能把系统音频路由到 OBS 或 Zoom 等采集应用。";
 "blackhole_not_installed_error" = "未安装 BlackHole 驱动";

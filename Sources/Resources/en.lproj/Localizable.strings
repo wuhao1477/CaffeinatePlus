@@ -17,6 +17,8 @@
 "audio_routing_failed_error" = "Failed to route audio: %@";
 "auto_activate_launch" = "Auto Activate on Launch";
 "auto_activate_launch_subtitle" = "Activate sleep prevention after launch";
+"automatic_clamshell_virtual_display" = "Auto Virtual Display on Lid Close";
+"automatic_clamshell_virtual_display_subtitle" = "Create a virtual display and keep the Mac awake after lid close";
 "battery" = "Battery";
 "blackhole_required_body" = "BlackHole virtual audio driver is required to route system audio to capture apps like OBS or Zoom.";
 "blackhole_not_installed_error" = "BlackHole driver is not installed";

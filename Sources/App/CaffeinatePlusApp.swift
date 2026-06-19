@@ -30,13 +30,17 @@ struct CaffeinatePlusApp: App {
     }
     .menuBarExtraStyle(.window)
 
-    // 设置窗口（可选）
-    #if DEBUG
-      Settings {
-        SettingsTabView()
-          .environmentObject(appState)
-          .preferredColorScheme(appState.theme.colorScheme)
-      }
-    #endif
+    WindowGroup("CaffeinatePlus") {
+      PopoverView()
+        .environmentObject(appState)
+        .preferredColorScheme(appState.theme.colorScheme)
+    }
+    .windowResizability(.contentSize)
+
+    Settings {
+      SettingsTabView()
+        .environmentObject(appState)
+        .preferredColorScheme(appState.theme.colorScheme)
+    }
   }
 }
