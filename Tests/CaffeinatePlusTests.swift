@@ -334,6 +334,34 @@ final class BundleVersionTests: CaffeinatePlusTestCase {
     }
 }
 
+// MARK: - App Icon Tests
+
+final class AppIconTests: CaffeinatePlusTestCase {
+
+    func testBuildUsesLegacyCaffeinatePlusIcon() throws {
+        let rootURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let iconURL = rootURL
+            .appendingPathComponent("Sources")
+            .appendingPathComponent("Resources")
+            .appendingPathComponent("AppIcon.icns")
+        let script = try String(
+            contentsOf: rootURL
+                .appendingPathComponent("scripts")
+                .appendingPathComponent("build-dmg.sh"),
+            encoding: .utf8
+        )
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: iconURL.path))
+        XCTAssertEqual(try Data(contentsOf: iconURL).count, 1_169_254)
+        XCTAssertTrue(script.contains("APP_ICON_FILE=\"$ROOT_DIR/Sources/Resources/AppIcon.icns\""))
+        XCTAssertTrue(script.contains("cp \"$APP_ICON_FILE\" \"$APP_BUNDLE/Contents/Resources/AppIcon.icns\""))
+        XCTAssertTrue(script.contains("<key>CFBundleIconFile</key>"))
+        XCTAssertTrue(script.contains("<string>AppIcon</string>"))
+    }
+}
+
 // MARK: - Clamshell Automation Tests
 
 final class ClamshellAutomationTests: CaffeinatePlusTestCase {

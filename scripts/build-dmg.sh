@@ -11,6 +11,7 @@ APP_BUNDLE="$DIST_DIR/$APP_NAME.app"
 DMG_ROOT="$DIST_DIR/dmg-root"
 ENTITLEMENTS_FILE="$ROOT_DIR/Configuration/CaffeinatePlus.entitlements"
 VERSION_FILE="$ROOT_DIR/VERSION"
+APP_ICON_FILE="$ROOT_DIR/Sources/Resources/AppIcon.icns"
 
 ref_name="${GITHUB_REF_NAME:-}"
 if [[ "$ref_name" =~ ^v[0-9]+\.[0-9]+\.[0-9]+.*$ ]]; then
@@ -27,6 +28,11 @@ if [[ ! "$app_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+([-.+][A-Za-z0-9.-]+)?$ ]]; the
   exit 1
 fi
 
+if [[ ! -f "$APP_ICON_FILE" ]]; then
+  echo "Missing app icon: $APP_ICON_FILE" >&2
+  exit 1
+fi
+
 build_number="$(git -C "$ROOT_DIR" rev-list --count HEAD 2>/dev/null || date +%Y%m%d%H%M%S)"
 short_sha="$(git -C "$ROOT_DIR" rev-parse --short HEAD 2>/dev/null || echo local)"
 dmg_name="CaffeinatePlus-${ref_name:-$short_sha}.dmg"
@@ -38,6 +44,7 @@ cd "$ROOT_DIR"
 swift build -c release --scratch-path "$SCRATCH_DIR"
 bin_dir="$(swift build -c release --scratch-path "$SCRATCH_DIR" --show-bin-path)"
 cp "$bin_dir/$EXECUTABLE_NAME" "$APP_BUNDLE/Contents/MacOS/$EXECUTABLE_NAME"
+cp "$APP_ICON_FILE" "$APP_BUNDLE/Contents/Resources/AppIcon.icns"
 if [[ -d "$bin_dir/${EXECUTABLE_NAME}_${EXECUTABLE_NAME}.bundle" ]]; then
   cp -R "$bin_dir/${EXECUTABLE_NAME}_${EXECUTABLE_NAME}.bundle" \
     "$APP_BUNDLE/Contents/Resources/"
@@ -56,6 +63,8 @@ cat > "$APP_BUNDLE/Contents/Info.plist" <<PLIST
   <string>$EXECUTABLE_NAME</string>
   <key>CFBundleIdentifier</key>
   <string>$BUNDLE_ID</string>
+  <key>CFBundleIconFile</key>
+  <string>AppIcon</string>
   <key>CFBundleInfoDictionaryVersion</key>
   <string>6.0</string>
   <key>CFBundleName</key>
