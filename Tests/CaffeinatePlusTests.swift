@@ -532,7 +532,7 @@ final class ClamshellDisplayConfigurationTests: CaffeinatePlusTestCase {
         XCTAssertTrue(source.contains("configureDisplayEnabled(config, display.id, false)"))
         XCTAssertTrue(source.contains("displayEnabled(config, displayID, enabled ? 1 : 0)"))
         XCTAssertTrue(source.contains("try configureDisplayOrigin(config, virtualDisplayID, 0, 0)"))
-        XCTAssertTrue(source.contains("try configureDisplayMirror(config, virtualDisplayID, kCGNullDirectDisplay)"))
+        XCTAssertFalse(source.contains("try configureDisplayMirror(config, virtualDisplayID, kCGNullDirectDisplay)"))
         XCTAssertTrue(source.contains("try configureDisplayMode(config, display.id, display.mode)"))
     }
 }

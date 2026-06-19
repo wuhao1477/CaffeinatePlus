@@ -40,7 +40,6 @@ final class ClamshellDisplayConfiguration: ClamshellDisplayConfiguring {
 
     try applyDisplayTransaction { config in
       try configureDisplayEnabled(config, virtualDisplayID, true)
-      try configureDisplayMirror(config, virtualDisplayID, kCGNullDirectDisplay)
       try configureDisplayOrigin(config, virtualDisplayID, 0, 0)
 
       for display in builtinDisplays {
@@ -59,8 +58,6 @@ final class ClamshellDisplayConfiguration: ClamshellDisplayConfiguring {
 
           if display.mirrorsDisplayID != kCGNullDirectDisplay {
             try configureDisplayMirror(config, display.id, display.mirrorsDisplayID)
-          } else {
-            try configureDisplayMirror(config, display.id, kCGNullDirectDisplay)
           }
 
           try configureDisplayMode(config, display.id, display.mode)
