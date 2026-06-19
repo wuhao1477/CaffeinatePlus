@@ -366,7 +366,7 @@ final class AppIconTests: CaffeinatePlusTestCase {
 
 final class AppSceneTests: CaffeinatePlusTestCase {
 
-    func testReleaseBuildExposesMainWindowAndSettingsScene() throws {
+    func testReleaseBuildDoesNotAutoOpenWindowGroupInMenuBarMode() throws {
         let rootURL = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
@@ -377,10 +377,18 @@ final class AppSceneTests: CaffeinatePlusTestCase {
                 .appendingPathComponent("CaffeinatePlusApp.swift"),
             encoding: .utf8
         )
+        let buildScript = try String(
+            contentsOf: rootURL
+                .appendingPathComponent("scripts")
+                .appendingPathComponent("build-dmg.sh"),
+            encoding: .utf8
+        )
 
-        XCTAssertTrue(source.contains("WindowGroup"))
+        XCTAssertTrue(source.contains("MenuBarExtra"))
         XCTAssertTrue(source.contains("Settings {"))
         XCTAssertTrue(source.contains("SettingsTabView()"))
+        XCTAssertTrue(buildScript.contains("<key>LSUIElement</key>"))
+        XCTAssertFalse(source.contains("WindowGroup"))
         XCTAssertFalse(source.contains("#if DEBUG"))
     }
 }

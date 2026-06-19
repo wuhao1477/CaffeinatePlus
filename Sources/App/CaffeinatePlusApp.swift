@@ -30,13 +30,6 @@ struct CaffeinatePlusApp: App {
     }
     .menuBarExtraStyle(.window)
 
-    WindowGroup("CaffeinatePlus") {
-      PopoverView()
-        .environmentObject(appState)
-        .preferredColorScheme(appState.theme.colorScheme)
-    }
-    .windowResizability(.contentSize)
-
     Settings {
       SettingsTabView()
         .environmentObject(appState)
