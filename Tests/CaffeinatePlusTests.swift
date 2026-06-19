@@ -505,7 +505,7 @@ final class ClamshellAutomationTests: CaffeinatePlusTestCase {
 
 final class ClamshellDisplayConfigurationTests: CaffeinatePlusTestCase {
 
-    func testDisplayConfigurationUsesCoreGraphicsHeadlessModeCalls() throws {
+    func testDisplayConfigurationReplicatesOriginalVirtualDisplayOnlyPath() throws {
         let rootURL = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
@@ -517,23 +517,16 @@ final class ClamshellDisplayConfigurationTests: CaffeinatePlusTestCase {
             encoding: .utf8
         )
 
-        XCTAssertTrue(source.contains("CGBeginDisplayConfiguration"))
-        XCTAssertTrue(source.contains("CGCompleteDisplayConfiguration"))
-        XCTAssertTrue(source.contains("CGCompleteDisplayConfiguration(config, .forSession)"))
+        XCTAssertFalse(source.contains("CGBeginDisplayConfiguration"))
+        XCTAssertFalse(source.contains("CGCompleteDisplayConfiguration"))
+        XCTAssertFalse(source.contains("CGConfigureDisplay"))
         XCTAssertTrue(source.contains("CGGetOnlineDisplayList"))
-        XCTAssertTrue(source.contains("CGSConfigureDisplayEnabled"))
-        XCTAssertTrue(source.contains("SLSConfigureDisplayEnabled"))
-        XCTAssertTrue(source.contains("/System/Library/PrivateFrameworks/SkyLight.framework/SkyLight"))
-        XCTAssertTrue(source.contains("/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics"))
-        XCTAssertTrue(source.contains("@convention(c) (CGDisplayConfigRef?, CGDirectDisplayID, Int32) -> CGError"))
-        XCTAssertTrue(source.contains("CGDisplayIsBuiltin"))
-        XCTAssertTrue(source.contains("No built-in display found for clamshell headless mode"))
-        XCTAssertTrue(source.contains("configureDisplayEnabled(config, display.id, true)"))
-        XCTAssertTrue(source.contains("configureDisplayEnabled(config, display.id, false)"))
-        XCTAssertTrue(source.contains("displayEnabled(config, displayID, enabled ? 1 : 0)"))
-        XCTAssertFalse(source.contains("try configureDisplayOrigin(config, virtualDisplayID, 0, 0)"))
-        XCTAssertFalse(source.contains("try configureDisplayMirror(config, virtualDisplayID, kCGNullDirectDisplay)"))
-        XCTAssertTrue(source.contains("try configureDisplayMode(config, display.id, display.mode)"))
+        XCTAssertFalse(source.contains("CGSConfigureDisplayEnabled"))
+        XCTAssertFalse(source.contains("SLSConfigureDisplayEnabled"))
+        XCTAssertFalse(source.contains("/System/Library/PrivateFrameworks/SkyLight.framework/SkyLight"))
+        XCTAssertFalse(source.contains("@convention(c) (CGDisplayConfigRef?, CGDirectDisplayID, Int32) -> CGError"))
+        XCTAssertTrue(source.contains("Using system clamshell display handling"))
+        XCTAssertTrue(source.contains("No manual display restore needed"))
     }
 }
 
