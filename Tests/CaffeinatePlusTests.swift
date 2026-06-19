@@ -340,53 +340,181 @@ final class ClamshellAutomationTests: CaffeinatePlusTestCase {
 
     func testLidCloseCreatesVirtualDisplayAndPreventsSleep() throws {
         let automation = ClamshellAutomation()
+        var events: [String] = []
         let virtualDisplay = RecordingClamshellVirtualDisplay()
         let sleep = RecordingClamshellSleep()
+        let displayConfiguration = RecordingClamshellDisplayConfiguration()
+        virtualDisplay.onCreate = { events.append("createVirtualDisplay") }
+        sleep.onPreventSleep = { events.append("preventSleep") }
+        displayConfiguration.onCaptureDisplayConfiguration = { events.append("captureDisplayConfiguration") }
+        displayConfiguration.onEnterHeadlessMode = { _ in events.append("enterHeadlessMode") }
         let config = DisplayConfig(width: 1920, height: 1080, hiDPI: false)
 
         let shouldMarkActive = try automation.lidDidClose(
             config: config,
             wasAppActive: false,
             virtualDisplay: virtualDisplay,
-            sleep: sleep
+            sleep: sleep,
+            displayConfiguration: displayConfiguration
         )
 
         XCTAssertTrue(shouldMarkActive)
         XCTAssertEqual(virtualDisplay.createdConfigs, [config])
         XCTAssertEqual(sleep.preventSleepCallCount, 1)
+        XCTAssertEqual(displayConfiguration.enteredVirtualDisplayIDs, [virtualDisplay.displayID])
+        XCTAssertEqual(
+            events,
+            ["captureDisplayConfiguration", "preventSleep", "createVirtualDisplay", "enterHeadlessMode"]
+        )
     }
 
-    func testLidOpenCleansOnlyAutoCreatedSession() throws {
+    func testLidCloseSavesStateAndLidOpenRestoresOriginalConfiguration() throws {
         let automation = ClamshellAutomation()
         let virtualDisplay = RecordingClamshellVirtualDisplay()
         let sleep = RecordingClamshellSleep()
+        let displayConfiguration = RecordingClamshellDisplayConfiguration()
+        sleep.snapshot = ClamshellSleepSnapshot(
+            preventDisplaySleep: true,
+            preventSystemSleep: false,
+            preventScreenSaver: false,
+            preventAutoLock: false
+        )
 
         _ = try automation.lidDidClose(
             config: DisplayConfig(width: 1920, height: 1080, hiDPI: false),
             wasAppActive: false,
             virtualDisplay: virtualDisplay,
-            sleep: sleep
+            sleep: sleep,
+            displayConfiguration: displayConfiguration
         )
 
         let shouldMarkActive = automation.lidDidOpen(
             virtualDisplay: virtualDisplay,
-            sleep: sleep
+            sleep: sleep,
+            displayConfiguration: displayConfiguration
         )
 
         XCTAssertEqual(shouldMarkActive, false)
         XCTAssertEqual(virtualDisplay.removeCallCount, 1)
-        XCTAssertEqual(sleep.allowSleepCallCount, 1)
+        XCTAssertEqual(sleep.restoredSnapshots, [
+            ClamshellSleepSnapshot(
+                preventDisplaySleep: true,
+                preventSystemSleep: false,
+                preventScreenSaver: false,
+                preventAutoLock: false
+            )
+        ])
+        XCTAssertEqual(displayConfiguration.restoredSnapshots.map(\.displayIDs), [[1, 2]])
+    }
+
+    func testLidOpenKeepsPreexistingVirtualDisplayAndRestoresAppActiveState() throws {
+        let automation = ClamshellAutomation()
+        let virtualDisplay = RecordingClamshellVirtualDisplay()
+        let sleep = RecordingClamshellSleep()
+        let displayConfiguration = RecordingClamshellDisplayConfiguration()
+        virtualDisplay.isActive = true
+
+        _ = try automation.lidDidClose(
+            config: DisplayConfig(width: 1920, height: 1080, hiDPI: false),
+            wasAppActive: true,
+            virtualDisplay: virtualDisplay,
+            sleep: sleep,
+            displayConfiguration: displayConfiguration
+        )
+
+        let shouldMarkActive = automation.lidDidOpen(
+            virtualDisplay: virtualDisplay,
+            sleep: sleep,
+            displayConfiguration: displayConfiguration
+        )
+
+        XCTAssertEqual(shouldMarkActive, true)
+        XCTAssertEqual(virtualDisplay.createdConfigs, [])
+        XCTAssertEqual(virtualDisplay.removeCallCount, 0)
+    }
+
+    func testLidCloseRollsBackCreatedVirtualDisplayWhenHeadlessModeFails() throws {
+        let automation = ClamshellAutomation()
+        let virtualDisplay = RecordingClamshellVirtualDisplay()
+        let sleep = RecordingClamshellSleep()
+        let displayConfiguration = RecordingClamshellDisplayConfiguration()
+        displayConfiguration.enterError = CaffeinateError.configurationError("failed")
+
+        XCTAssertThrowsError(
+            try automation.lidDidClose(
+                config: DisplayConfig(width: 1920, height: 1080, hiDPI: false),
+                wasAppActive: false,
+                virtualDisplay: virtualDisplay,
+                sleep: sleep,
+                displayConfiguration: displayConfiguration
+            )
+        )
+
+        XCTAssertEqual(virtualDisplay.removeCallCount, 1)
+        XCTAssertEqual(sleep.preventSleepCallCount, 1)
+        XCTAssertEqual(sleep.restoredSnapshots, [
+            ClamshellSleepSnapshot(
+                preventDisplaySleep: false,
+                preventSystemSleep: false,
+                preventScreenSaver: false,
+                preventAutoLock: false
+            )
+        ])
+        XCTAssertNil(
+            automation.lidDidOpen(
+                virtualDisplay: virtualDisplay,
+                sleep: sleep,
+                displayConfiguration: displayConfiguration
+            )
+        )
+    }
+}
+
+final class ClamshellDisplayConfigurationTests: CaffeinatePlusTestCase {
+
+    func testDisplayConfigurationUsesCoreGraphicsHeadlessModeCalls() throws {
+        let rootURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let source = try String(
+            contentsOf: rootURL
+                .appendingPathComponent("Sources")
+                .appendingPathComponent("Services")
+                .appendingPathComponent("ClamshellDisplayConfiguration.swift"),
+            encoding: .utf8
+        )
+
+        XCTAssertTrue(source.contains("CGBeginDisplayConfiguration"))
+        XCTAssertTrue(source.contains("CGCompleteDisplayConfiguration"))
+        XCTAssertTrue(source.contains("CGCompleteDisplayConfiguration(config, .forSession)"))
+        XCTAssertTrue(source.contains("CGGetOnlineDisplayList"))
+        XCTAssertTrue(source.contains("CGSConfigureDisplayEnabled"))
+        XCTAssertTrue(source.contains("SLSConfigureDisplayEnabled"))
+        XCTAssertTrue(source.contains("/System/Library/PrivateFrameworks/SkyLight.framework/SkyLight"))
+        XCTAssertTrue(source.contains("/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics"))
+        XCTAssertTrue(source.contains("@convention(c) (CGDisplayConfigRef?, CGDirectDisplayID, Bool) -> CGError"))
+        XCTAssertTrue(source.contains("CGDisplayIsBuiltin"))
+        XCTAssertTrue(source.contains("No built-in display found for clamshell headless mode"))
+        XCTAssertTrue(source.contains("configureDisplayEnabled(config, display.id, true)"))
+        XCTAssertTrue(source.contains("configureDisplayEnabled(config, display.id, false)"))
+        XCTAssertTrue(source.contains("configureDisplayEnabled(config, virtualDisplayID, true)"))
+        XCTAssertTrue(source.contains("try configureDisplayOrigin(config, virtualDisplayID, 0, 0)"))
+        XCTAssertTrue(source.contains("try configureDisplayMirror(config, virtualDisplayID, kCGNullDirectDisplay)"))
+        XCTAssertTrue(source.contains("try configureDisplayMode(config, display.id, display.mode)"))
     }
 }
 
 private final class RecordingClamshellVirtualDisplay: ClamshellVirtualDisplayControlling {
     var isActive = false
+    var displayID: UInt32 = 42
     var createdConfigs: [DisplayConfig] = []
     var removeCallCount = 0
+    var onCreate: (() -> Void)?
 
     func createDisplay(config: DisplayConfig) throws {
         createdConfigs.append(config)
         isActive = true
+        onCreate?()
     }
 
     func removeDisplay() {
@@ -396,15 +524,51 @@ private final class RecordingClamshellVirtualDisplay: ClamshellVirtualDisplayCon
 }
 
 private final class RecordingClamshellSleep: ClamshellSleepControlling {
+    var snapshot = ClamshellSleepSnapshot(
+        preventDisplaySleep: false,
+        preventSystemSleep: false,
+        preventScreenSaver: false,
+        preventAutoLock: false
+    )
     var preventSleepCallCount = 0
-    var allowSleepCallCount = 0
+    var restoredSnapshots: [ClamshellSleepSnapshot] = []
+    var onPreventSleep: (() -> Void)?
 
     func preventSleep() throws {
         preventSleepCallCount += 1
+        onPreventSleep?()
     }
 
-    func allowSleep() {
-        allowSleepCallCount += 1
+    func restoreSleepState(_ snapshot: ClamshellSleepSnapshot) {
+        restoredSnapshots.append(snapshot)
+        self.snapshot = snapshot
+    }
+}
+
+private final class RecordingClamshellDisplayConfiguration: ClamshellDisplayConfiguring {
+    var snapshot = ClamshellDisplaySnapshot(displayIDs: [1, 2])
+    var enteredVirtualDisplayIDs: [UInt32] = []
+    var restoredSnapshots: [ClamshellDisplaySnapshot] = []
+    var onCaptureDisplayConfiguration: (() -> Void)?
+    var onEnterHeadlessMode: ((UInt32) -> Void)?
+    var enterError: Error?
+
+    func captureDisplayConfiguration() -> ClamshellDisplaySnapshot {
+        onCaptureDisplayConfiguration?()
+        return snapshot
+    }
+
+    func enterHeadlessMode(
+        virtualDisplayID: UInt32,
+        originalSnapshot: ClamshellDisplaySnapshot
+    ) throws {
+        enteredVirtualDisplayIDs.append(virtualDisplayID)
+        onEnterHeadlessMode?(virtualDisplayID)
+        if let enterError { throw enterError }
+    }
+
+    func restoreDisplayConfiguration(_ snapshot: ClamshellDisplaySnapshot) {
+        restoredSnapshots.append(snapshot)
     }
 }
 

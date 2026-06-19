@@ -36,6 +36,7 @@ class AppState: ObservableObject {
   let notificationService = NotificationService()
   let systemMonitorService = SystemMonitorService()
   private let clamshellAutomation = ClamshellAutomation()
+  private let clamshellDisplayConfiguration = ClamshellDisplayConfiguration()
 
   // MARK: - Private Properties
 
@@ -343,7 +344,8 @@ class AppState: ObservableObject {
           config: displayConfig,
           wasAppActive: isActive,
           virtualDisplay: virtualDisplayService,
-          sleep: sleepService
+          sleep: sleepService,
+          displayConfiguration: clamshellDisplayConfiguration
         )
         updateActiveState()
       } catch {
@@ -354,7 +356,8 @@ class AppState: ObservableObject {
 
     if let active = clamshellAutomation.lidDidOpen(
       virtualDisplay: virtualDisplayService,
-      sleep: sleepService
+      sleep: sleepService,
+      displayConfiguration: clamshellDisplayConfiguration
     ) {
       isActive = active
       updateActiveState()
