@@ -244,6 +244,46 @@ final class LocalizationTests: CaffeinatePlusTestCase {
             "虚拟显示器"
         )
     }
+
+    func testAwakePageChineseResourcesAreComplete() {
+        XCTAssertEqual(AppLocalization.localized("awake", language: .simplifiedChinese), "唤醒")
+        XCTAssertEqual(
+            AppLocalization.localized("system_kept_awake", language: .simplifiedChinese),
+            "系统正在保持唤醒"
+        )
+        XCTAssertEqual(
+            AppLocalization.localized("prevent_display_sleep_subtitle", language: .simplifiedChinese),
+            "保持屏幕常亮"
+        )
+        XCTAssertEqual(
+            AppLocalization.localized("prevent_screen_saver_lock", language: .simplifiedChinese),
+            "防止屏保与锁屏"
+        )
+    }
+}
+
+// MARK: - Awake Page Layout Tests
+
+final class AwakePageLayoutTests: CaffeinatePlusTestCase {
+
+    func testAwakePageUsesAlignedOptionRows() throws {
+        let rootURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let views = try String(
+            contentsOf: rootURL
+                .appendingPathComponent("Sources")
+                .appendingPathComponent("Views")
+                .appendingPathComponent("Views.swift"),
+            encoding: .utf8
+        )
+
+        XCTAssertTrue(views.contains("private struct AwakeOptionRow"))
+        XCTAssertTrue(views.contains("frame(width: 34, height: 34)"))
+        XCTAssertTrue(views.contains("frame(width: 46, alignment: .trailing)"))
+        XCTAssertTrue(views.contains("appState.localized(\"prevent_screen_saver_lock\")"))
+        XCTAssertFalse(views.contains("appState.localized(\"auto_activate_launch\"),\n        isOn: $appState.autoActivateOnLaunch"))
+    }
 }
 
 // MARK: - Bundle Version Tests

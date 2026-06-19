@@ -9,6 +9,7 @@
 "app_audio" = "App Audio";
 "appearance" = "Appearance";
 "audio" = "Audio";
+"awake" = "Awake";
 "audio_driver_required" = "Audio Driver Required";
 "audio_flow" = "Audio Flow";
 "audio_routing" = "Audio Routing";
@@ -72,8 +73,12 @@
 "options" = "Options";
 "permission_denied_error" = "Permission denied: %@";
 "prevent_display_sleep" = "Prevent Display Sleep";
+"prevent_display_sleep_subtitle" = "Keep screen on";
+"prevent_screen_saver_lock" = "Prevent Screen Saver & Lock";
+"prevent_screen_saver_lock_subtitle" = "Simulate user activity";
 "prevent_sleep" = "Prevent Sleep";
 "prevent_system_sleep" = "Prevent System Sleep";
+"prevent_system_sleep_subtitle" = "Keep Mac from sleeping";
 "quick_actions" = "Quick Actions";
 "quick_presets" = "Quick Presets";
 "quit" = "Quit";
@@ -99,7 +104,9 @@
 "sleep_service_failed_error" = "Failed to prevent sleep: %@";
 "speaker" = "Speaker";
 "system" = "System";
+"system_can_sleep" = "System can sleep normally";
 "system_info" = "System Info";
+"system_kept_awake" = "System is kept awake";
 "system_uptime" = "System Uptime";
 "thermal_state" = "Thermal State";
 "theme" = "Theme";

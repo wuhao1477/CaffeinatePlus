@@ -9,6 +9,7 @@
 "app_audio" = "应用音频";
 "appearance" = "外观";
 "audio" = "音频";
+"awake" = "唤醒";
 "audio_driver_required" = "需要音频驱动";
 "audio_flow" = "音频流向";
 "audio_routing" = "音频路由";
@@ -72,8 +73,12 @@
 "options" = "选项";
 "permission_denied_error" = "权限被拒绝：%@";
 "prevent_display_sleep" = "防止显示器睡眠";
+"prevent_display_sleep_subtitle" = "保持屏幕常亮";
+"prevent_screen_saver_lock" = "防止屏保与锁屏";
+"prevent_screen_saver_lock_subtitle" = "模拟用户活动";
 "prevent_sleep" = "防睡眠";
 "prevent_system_sleep" = "防止系统睡眠";
+"prevent_system_sleep_subtitle" = "防止 Mac 进入睡眠";
 "quick_actions" = "快捷操作";
 "quick_presets" = "快捷预设";
 "quit" = "退出";
@@ -99,7 +104,9 @@
 "sleep_service_failed_error" = "防睡眠失败：%@";
 "speaker" = "扬声器";
 "system" = "跟随系统";
+"system_can_sleep" = "系统可正常睡眠";
 "system_info" = "系统信息";
+"system_kept_awake" = "系统正在保持唤醒";
 "system_uptime" = "系统运行时间";
 "thermal_state" = "温控状态";
 "theme" = "主题";

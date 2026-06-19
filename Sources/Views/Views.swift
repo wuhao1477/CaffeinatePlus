@@ -196,83 +196,141 @@ struct AwakeTabView: View {
 
   var body: some View {
     ScrollView {
-      VStack(spacing: 16) {
+      VStack(alignment: .leading, spacing: 0) {
         if let message = appState.lastErrorMessage {
           ErrorBanner(message: message) {
             appState.lastErrorMessage = nil
           }
+          .padding(.horizontal, 16)
+          .padding(.top, 16)
         }
 
-        // 许可证过期横幅
-        // 开源版本：移除授权横幅
-
-        // 主切换卡片
         primaryToggleCard
 
-        // 选项
         optionsSection
       }
-      .padding()
     }
   }
 
   private var primaryToggleCard: some View {
-    VStack(alignment: .leading, spacing: 12) {
-      HStack {
-        Image(systemName: "moon.zzz.fill")
-          .font(.largeTitle)
-          .foregroundColor(.blue)
-          .frame(width: 60, height: 60)
+    HStack(alignment: .center, spacing: 16) {
+      Image(systemName: "bolt.fill")
+        .font(.system(size: 32, weight: .semibold))
+        .foregroundColor(.blue)
+        .frame(width: 56, height: 56)
 
-        VStack(alignment: .leading) {
-          Text(appState.localized("prevent_sleep"))
-            .font(.headline)
-          Text(appState.localized(appState.isActive ? "active" : "inactive"))
-            .font(.subheadline)
-            .foregroundColor(.secondary)
-        }
+      VStack(alignment: .leading, spacing: 4) {
+        Text(appState.localized("awake"))
+          .font(.system(size: 15, weight: .bold))
+          .foregroundColor(.primary)
 
-        Spacer()
-
-        Toggle(
-          "",
-          isOn: Binding(
-            get: { appState.isActive },
-            set: { _ in appState.toggle() }
-          )
-        )
-        .toggleStyle(.switch)
+        Text(appState.localized(appState.isActive ? "system_kept_awake" : "system_can_sleep"))
+          .font(.system(size: 12, weight: .regular))
+          .foregroundColor(.secondary)
+          .lineLimit(1)
       }
+
+      Spacer(minLength: 12)
+
+      Toggle(
+        "",
+        isOn: Binding(
+          get: { appState.isActive },
+          set: { _ in appState.toggle() }
+        )
+      )
+      .labelsHidden()
+      .toggleStyle(.switch)
+      .frame(width: 46, alignment: .trailing)
     }
-    .padding()
-    .background(Color(NSColor.controlBackgroundColor))
-    .cornerRadius(12)
+    .padding(.horizontal, 20)
+    .padding(.top, 28)
+    .padding(.bottom, 30)
   }
 
   private var optionsSection: some View {
     VStack(alignment: .leading, spacing: 12) {
       Text(appState.localized("options"))
-        .font(.headline)
+        .font(.system(size: 13, weight: .bold))
+        .foregroundColor(.secondary)
+        .padding(.horizontal, 20)
 
-      Toggle(
-        appState.localized("prevent_display_sleep"),
-        isOn: Binding(
-          get: { appState.sleepService.preventDisplaySleep },
-          set: { appState.setPreventDisplaySleep($0) }
-        ))
-      Toggle(
-        appState.localized("prevent_system_sleep"),
-        isOn: Binding(
-          get: { appState.sleepService.preventSystemSleep },
-          set: { appState.setPreventSystemSleep($0) }
-        ))
-      Toggle(
-        appState.localized("auto_activate_launch"),
-        isOn: $appState.autoActivateOnLaunch)
+      VStack(spacing: 0) {
+        AwakeOptionRow(
+          icon: "display",
+          title: appState.localized("prevent_display_sleep"),
+          subtitle: appState.localized("prevent_display_sleep_subtitle"),
+          isOn: Binding(
+            get: { appState.sleepService.preventDisplaySleep },
+            set: { appState.setPreventDisplaySleep($0) }
+          )
+        )
+
+        Divider().padding(.leading, 62)
+
+        AwakeOptionRow(
+          icon: "laptopcomputer",
+          title: appState.localized("prevent_system_sleep"),
+          subtitle: appState.localized("prevent_system_sleep_subtitle"),
+          isOn: Binding(
+            get: { appState.sleepService.preventSystemSleep },
+            set: { appState.setPreventSystemSleep($0) }
+          )
+        )
+
+        Divider().padding(.leading, 62)
+
+        AwakeOptionRow(
+          icon: "cursorarrow",
+          title: appState.localized("prevent_screen_saver_lock"),
+          subtitle: appState.localized("prevent_screen_saver_lock_subtitle"),
+          isOn: Binding(
+            get: { appState.sleepService.preventScreenSaver || appState.sleepService.preventAutoLock },
+            set: { appState.setPreventScreenSaverAndLock($0) }
+          )
+        )
+      }
+      .padding(.horizontal, 20)
     }
-    .padding()
-    .background(Color(NSColor.controlBackgroundColor))
-    .cornerRadius(12)
+  }
+}
+
+private struct AwakeOptionRow: View {
+  let icon: String
+  let title: String
+  let subtitle: String
+  @Binding var isOn: Bool
+
+  var body: some View {
+    HStack(alignment: .center, spacing: 16) {
+      Image(systemName: icon)
+        .font(.system(size: 19, weight: .regular))
+        .foregroundColor(.secondary)
+        .frame(width: 34, height: 34)
+
+      VStack(alignment: .leading, spacing: 3) {
+        Text(title)
+          .font(.system(size: 13, weight: .semibold))
+          .foregroundColor(.primary)
+          .lineLimit(1)
+          .minimumScaleFactor(0.9)
+
+        Text(subtitle)
+          .font(.system(size: 12, weight: .regular))
+          .foregroundColor(.secondary)
+          .lineLimit(1)
+          .minimumScaleFactor(0.85)
+      }
+
+      Spacer(minLength: 12)
+
+      Toggle("", isOn: $isOn)
+        .labelsHidden()
+        .toggleStyle(.switch)
+        .frame(width: 46, alignment: .trailing)
+    }
+    .frame(minHeight: 44)
+    .padding(.vertical, 6)
   }
 }
 

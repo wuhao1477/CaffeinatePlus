@@ -195,6 +195,12 @@ class AppState: ObservableObject {
     updateActiveFlagFromSleepService()
   }
 
+  func setPreventScreenSaverAndLock(_ enabled: Bool) {
+    sleepService.preventScreenSaver = enabled
+    sleepService.preventAutoLock = enabled
+    updateActiveFlagFromSleepService()
+  }
+
   func setNotificationsEnabled(_ enabled: Bool) {
     notificationsEnabled = enabled
     if enabled {
