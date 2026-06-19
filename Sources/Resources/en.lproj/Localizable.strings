@@ -18,7 +18,7 @@
 "auto_activate_launch" = "Auto Activate on Launch";
 "auto_activate_launch_subtitle" = "Activate sleep prevention after launch";
 "automatic_clamshell_virtual_display" = "Auto Virtual Display on Lid Close";
-"automatic_clamshell_virtual_display_subtitle" = "Create a virtual display and keep the Mac awake after lid close";
+"automatic_clamshell_virtual_display_subtitle" = "Enable lid monitoring, then prepare before closing the lid";
 "battery" = "Battery";
 "blackhole_required_body" = "BlackHole virtual audio driver is required to route system audio to capture apps like OBS or Zoom.";
 "blackhole_not_installed_error" = "BlackHole driver is not installed";
@@ -81,6 +81,10 @@
 "prevent_sleep" = "Prevent Sleep";
 "prevent_system_sleep" = "Prevent System Sleep";
 "prevent_system_sleep_subtitle" = "Keep Mac from sleeping";
+"prepare" = "Prepare";
+"prepared" = "Prepared";
+"prepare_clamshell_virtual_display" = "Prepare for Lid Close";
+"prepare_clamshell_virtual_display_subtitle" = "Temporarily create a virtual display and remove it after lid open";
 "quick_actions" = "Quick Actions";
 "quick_presets" = "Quick Presets";
 "quit" = "Quit";

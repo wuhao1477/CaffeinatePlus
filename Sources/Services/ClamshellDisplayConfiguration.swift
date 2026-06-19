@@ -1,10 +1,22 @@
 // ClamshellDisplayConfiguration.swift
-// Tracks display state for automatic clamshell headless mode.
+// Applies and restores display enablement for automatic clamshell headless mode.
 
 import CoreGraphics
 import Foundation
 
 final class ClamshellDisplayConfiguration: ClamshellDisplayConfiguring {
+  typealias DisplayEnabledFunction = @convention(c) (CGDisplayConfigRef?, CGDirectDisplayID, Int32) -> CGError
+
+  private let displayEnabled: DisplayEnabledFunction?
+
+  init() {
+    displayEnabled = ClamshellDisplayConfiguration.resolveDisplayEnabledFunction()
+  }
+
+  init(displayEnabled: DisplayEnabledFunction?) {
+    self.displayEnabled = displayEnabled
+  }
+
   func captureDisplayConfiguration() -> ClamshellDisplaySnapshot {
     makeSnapshot()
   }
@@ -17,15 +29,38 @@ final class ClamshellDisplayConfiguration: ClamshellDisplayConfiguring {
       throw CaffeinateError.configurationError("Virtual display ID is unavailable")
     }
 
+    let builtinDisplays = originalSnapshot.displays.filter { CGDisplayIsBuiltin($0.id) != 0 }
+    guard !builtinDisplays.isEmpty else {
+      throw CaffeinateError.configurationError("No built-in display found for clamshell headless mode")
+    }
+
     Logger.shared.info(
-      "Using system clamshell display handling: allDisplays=\(originalSnapshot.displayIDs), virtualDisplayID=\(virtualDisplayID)"
+      "Entering clamshell headless mode: allDisplays=\(originalSnapshot.displayIDs), builtInDisplays=\(builtinDisplays.map(\.id)), virtualDisplayID=\(virtualDisplayID)"
     )
+
+    try applyDisplayTransaction { config in
+      try configureDisplayEnabled(config, virtualDisplayID, true)
+
+      for display in builtinDisplays {
+        try configureDisplayEnabled(config, display.id, false)
+      }
+    }
+
+    Logger.shared.info("Built-in display disabled for clamshell headless mode")
   }
 
   func restoreDisplayConfiguration(_ snapshot: ClamshellDisplaySnapshot) {
-    Logger.shared.info(
-      "No manual display restore needed after clamshell mode: displays=\(snapshot.displayIDs)"
-    )
+    do {
+      try applyDisplayTransaction { config in
+        for display in snapshot.displays {
+          try configureDisplayEnabled(config, display.id, true)
+        }
+      }
+      Logger.shared.info("Display enablement restored after clamshell mode")
+    } catch {
+      Logger.shared.error("Failed to restore display enablement: \(error)")
+      CGRestorePermanentDisplayConfiguration()
+    }
   }
 
   private func makeSnapshot() -> ClamshellDisplaySnapshot {
@@ -56,5 +91,64 @@ final class ClamshellDisplayConfiguration: ClamshellDisplayConfiguring {
     }
 
     return Array(displays.prefix(Int(count)))
+  }
+
+  private func applyDisplayTransaction(_ configure: (CGDisplayConfigRef?) throws -> Void) throws {
+    var config: CGDisplayConfigRef?
+    let beginError = CGBeginDisplayConfiguration(&config)
+    guard beginError == .success else {
+      throw CaffeinateError.configurationError("CGBeginDisplayConfiguration failed: \(beginError)")
+    }
+
+    do {
+      try configure(config)
+    } catch {
+      CGCancelDisplayConfiguration(config)
+      throw error
+    }
+
+    let completeError = CGCompleteDisplayConfiguration(config, .forSession)
+    guard completeError == .success else {
+      CGCancelDisplayConfiguration(config)
+      throw CaffeinateError.configurationError("CGCompleteDisplayConfiguration failed: \(completeError)")
+    }
+  }
+
+  private func configureDisplayEnabled(
+    _ config: CGDisplayConfigRef?,
+    _ displayID: CGDirectDisplayID,
+    _ enabled: Bool
+  ) throws {
+    guard let displayEnabled else {
+      throw CaffeinateError.configurationError("Display enable API is unavailable")
+    }
+
+    Logger.shared.info("Configuring display \(displayID) enabled=\(enabled)")
+    let error = displayEnabled(config, displayID, enabled ? 1 : 0)
+    guard error == .success else {
+      throw CaffeinateError.configurationError(
+        "Configure display enabled failed for \(displayID): \(error)"
+      )
+    }
+  }
+
+  private static func resolveDisplayEnabledFunction() -> DisplayEnabledFunction? {
+    let frameworkPaths = [
+      "/System/Library/PrivateFrameworks/SkyLight.framework/SkyLight",
+      "/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics",
+    ]
+    let symbolNames = ["SLSConfigureDisplayEnabled", "CGSConfigureDisplayEnabled"]
+
+    for frameworkPath in frameworkPaths {
+      guard let handle = dlopen(frameworkPath, RTLD_LAZY) else { continue }
+
+      for symbolName in symbolNames {
+        if let symbol = dlsym(handle, symbolName) {
+          return unsafeBitCast(symbol, to: DisplayEnabledFunction.self)
+        }
+      }
+    }
+
+    return nil
   }
 }

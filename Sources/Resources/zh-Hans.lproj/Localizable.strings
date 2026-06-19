@@ -18,7 +18,7 @@
 "auto_activate_launch" = "启动后自动启用";
 "auto_activate_launch_subtitle" = "启动后自动启用防睡眠";
 "automatic_clamshell_virtual_display" = "合盖自动虚拟显示器";
-"automatic_clamshell_virtual_display_subtitle" = "合盖后自动创建虚拟显示器并保持唤醒";
+"automatic_clamshell_virtual_display_subtitle" = "启用合盖监听，使用前点击准备合盖";
 "battery" = "电池";
 "blackhole_required_body" = "需要 BlackHole 虚拟音频驱动，才能把系统音频路由到 OBS 或 Zoom 等采集应用。";
 "blackhole_not_installed_error" = "未安装 BlackHole 驱动";
@@ -81,6 +81,10 @@
 "prevent_sleep" = "防睡眠";
 "prevent_system_sleep" = "防止系统睡眠";
 "prevent_system_sleep_subtitle" = "防止 Mac 进入睡眠";
+"prepare" = "准备";
+"prepared" = "已准备";
+"prepare_clamshell_virtual_display" = "准备合盖";
+"prepare_clamshell_virtual_display_subtitle" = "临时创建虚拟显示器，开盖后自动移除";
 "quick_actions" = "快捷操作";
 "quick_presets" = "快捷预设";
 "quit" = "退出";

@@ -23,6 +23,7 @@ class AppState: ObservableObject {
   @Published var language: AppLanguage = .system
   @Published var theme: AppTheme = .system
   @Published var lastErrorMessage: String?
+  @Published private(set) var clamshellVirtualDisplayPrepared = false
   @Published private(set) var launchAtLoginEnabled: Bool = false
 
   // MARK: - Services
@@ -242,10 +243,27 @@ class AppState: ObservableObject {
         updateActiveState()
       }
       clamshellAutomation.cancelPreparedVirtualDisplay(virtualDisplay: virtualDisplayService)
+      clamshellVirtualDisplayPrepared = false
       clamshellPowerManagement.deactivateAutomaticClamshellProtection()
     }
 
     saveSettings()
+  }
+
+  func prepareClamshellVirtualDisplayForLidClose() {
+    guard automaticClamshellVirtualDisplayEnabled else { return }
+    let wasActiveBeforePreparation = isActive
+
+    do {
+      let didCreate = try clamshellAutomation.prepareForLidClose(
+        config: displayConfig,
+        virtualDisplay: virtualDisplayService,
+        wasAppActive: wasActiveBeforePreparation
+      )
+      clamshellVirtualDisplayPrepared = didCreate || virtualDisplayService.isActive
+    } catch {
+      reportActivationFailure(error.localizedDescription)
+    }
   }
 
   func setLanguage(_ newLanguage: AppLanguage) {
@@ -377,15 +395,6 @@ class AppState: ObservableObject {
     } catch {
       logger.error("Failed to prepare automatic clamshell protection: \(error)")
     }
-
-    do {
-      _ = try clamshellAutomation.prepareForLidClose(
-        config: displayConfig,
-        virtualDisplay: virtualDisplayService
-      )
-    } catch {
-      logger.error("Failed to prepare automatic clamshell virtual display: \(error)")
-    }
   }
 
   /// 处理合盖状态变化（对齐原始应用）
@@ -419,6 +428,7 @@ class AppState: ObservableObject {
       displayConfiguration: clamshellDisplayConfiguration
     ) {
       isActive = active
+      clamshellVirtualDisplayPrepared = false
       updateActiveState()
     }
   }
@@ -489,6 +499,7 @@ class AppState: ObservableObject {
 
     deactivate()
     clamshellAutomation.cancelPreparedVirtualDisplay(virtualDisplay: virtualDisplayService)
+    clamshellVirtualDisplayPrepared = false
     clamshellPowerManagement.deactivateAutomaticClamshellProtection()
   }
 

@@ -961,6 +961,20 @@ struct SettingsTabView: View {
         )
         Divider().padding(.leading, 46)
 
+        actionRow(
+          icon: "display.badge.plus",
+          title: appState.localized("prepare_clamshell_virtual_display"),
+          subtitle: appState.localized("prepare_clamshell_virtual_display_subtitle"),
+          buttonTitle: appState.localized(
+            appState.clamshellVirtualDisplayPrepared ? "prepared" : "prepare"
+          ),
+          isEnabled: appState.automaticClamshellVirtualDisplayEnabled
+            && !appState.clamshellVirtualDisplayPrepared
+        ) {
+          appState.prepareClamshellVirtualDisplayForLidClose()
+        }
+        Divider().padding(.leading, 46)
+
         settingRow(
           icon: "keyboard",
           title: appState.localized("global_hotkey"),
@@ -1102,6 +1116,39 @@ struct SettingsTabView: View {
         .toggleStyle(.switch)
     }
     .frame(height: 44)
+  }
+
+  private func actionRow(
+    icon: String,
+    title: String,
+    subtitle: String,
+    buttonTitle: String,
+    isEnabled: Bool,
+    action: @escaping () -> Void
+  ) -> some View {
+    HStack(spacing: 12) {
+      Image(systemName: icon)
+        .font(.system(size: 14))
+        .foregroundColor(.secondary)
+        .frame(width: 30)
+
+      VStack(alignment: .leading, spacing: 3) {
+        Text(title)
+          .font(.system(size: 13))
+          .foregroundColor(.primary)
+        Text(subtitle)
+          .font(.system(size: 11))
+          .foregroundColor(.secondary)
+      }
+
+      Spacer()
+
+      Button(buttonTitle, action: action)
+        .buttonStyle(.bordered)
+        .controlSize(.small)
+        .disabled(!isEnabled)
+    }
+    .frame(height: 48)
   }
 
   private func pickerRow<Content: View>(

@@ -67,20 +67,24 @@ struct ClamshellDisplaySnapshot: Equatable {
 final class ClamshellAutomation {
   private var session: ClamshellSession?
   private var preparedVirtualDisplayByAutomation = false
+  private var preparedWasAppActive: Bool?
 
   func prepareForLidClose(
     config: DisplayConfig,
-    virtualDisplay: ClamshellVirtualDisplayControlling
+    virtualDisplay: ClamshellVirtualDisplayControlling,
+    wasAppActive: Bool = false
   ) throws -> Bool {
     guard session == nil else { return false }
     guard !virtualDisplay.isActive else {
       preparedVirtualDisplayByAutomation = false
+      preparedWasAppActive = nil
       return false
     }
 
     Logger.shared.info("Auto mode: preparing virtual display before lid close")
     try virtualDisplay.createDisplay(config: config)
     preparedVirtualDisplayByAutomation = true
+    preparedWasAppActive = wasAppActive
     return true
   }
 
@@ -90,6 +94,7 @@ final class ClamshellAutomation {
     guard preparedVirtualDisplayByAutomation else { return }
     virtualDisplay.removeDisplay()
     preparedVirtualDisplayByAutomation = false
+    preparedWasAppActive = nil
     Logger.shared.info("Auto mode: prepared virtual display removed")
   }
 
@@ -108,18 +113,11 @@ final class ClamshellAutomation {
 
     let sleepSnapshot = sleep.snapshot
     let preparedBeforeClose = preparedVirtualDisplayByAutomation
-    let shouldRemoveVirtualDisplay = preparedBeforeClose || !virtualDisplay.isActive
-    var createdVirtualDisplay = false
+    let shouldRemoveVirtualDisplay = preparedBeforeClose
 
     do {
-      if !virtualDisplay.isActive {
-        Logger.shared.info("Auto mode: creating virtual display for clamshell headless mode")
-        try virtualDisplay.createDisplay(config: config)
-        createdVirtualDisplay = true
-      }
-
       guard virtualDisplay.displayID != 0 else {
-        throw CaffeinateError.configurationError("Virtual display ID is unavailable after creation")
+        throw CaffeinateError.configurationError("Prepare virtual display before closing the lid")
       }
 
       try sleep.preventSystemSleepForClamshell()
@@ -136,21 +134,23 @@ final class ClamshellAutomation {
       )
 
       session = ClamshellSession(
-        wasAppActive: wasAppActive,
+        wasAppActive: preparedWasAppActive ?? wasAppActive,
         shouldRemoveVirtualDisplay: shouldRemoveVirtualDisplay,
         sleepSnapshot: sleepSnapshot,
         displaySnapshot: displaySnapshot
       )
       preparedVirtualDisplayByAutomation = false
+      preparedWasAppActive = nil
 
       Logger.shared.info("Virtual display created. Sleep prevention enabled.")
       return true
     } catch {
       Logger.shared.error("Auto mode: lid close activation failed: \(error)")
-      if createdVirtualDisplay || preparedBeforeClose {
+      if preparedBeforeClose {
         virtualDisplay.removeDisplay()
       }
       preparedVirtualDisplayByAutomation = false
+      preparedWasAppActive = nil
       sleep.restoreSleepState(sleepSnapshot)
       throw error
     }
