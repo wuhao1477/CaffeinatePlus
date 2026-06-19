@@ -404,7 +404,7 @@ final class ClamshellAutomationTests: CaffeinatePlusTestCase {
         let sleep = RecordingClamshellSleep()
         let displayConfiguration = RecordingClamshellDisplayConfiguration()
         virtualDisplay.onCreate = { events.append("createVirtualDisplay") }
-        sleep.onPreventSleep = { events.append("preventSleep") }
+        sleep.onPreventSystemSleep = { events.append("preventSystemSleep") }
         displayConfiguration.onCaptureDisplayConfiguration = { events.append("captureDisplayConfiguration") }
         displayConfiguration.onEnterHeadlessMode = { _ in events.append("enterHeadlessMode") }
         let config = DisplayConfig(width: 1920, height: 1080, hiDPI: false)
@@ -419,17 +419,58 @@ final class ClamshellAutomationTests: CaffeinatePlusTestCase {
 
         XCTAssertTrue(shouldMarkActive)
         XCTAssertEqual(virtualDisplay.createdConfigs, [config])
-        XCTAssertEqual(sleep.preventSleepCallCount, 1)
+        XCTAssertEqual(sleep.preventSystemSleepCallCount, 1)
+        XCTAssertEqual(
+            sleep.snapshot,
+            ClamshellSleepSnapshot(
+                preventDisplaySleep: false,
+                preventSystemSleep: true,
+                preventScreenSaver: false,
+                preventAutoLock: false
+            )
+        )
         XCTAssertEqual(displayConfiguration.enteredVirtualDisplayIDs, [virtualDisplay.displayID])
         XCTAssertEqual(
             events,
             [
                 "createVirtualDisplay",
-                "preventSleep",
+                "preventSystemSleep",
                 "captureDisplayConfiguration",
                 "enterHeadlessMode",
             ]
         )
+    }
+
+    func testPrepareForLidCloseCreatesVirtualDisplayBeforeClamshellEvent() throws {
+        let automation = ClamshellAutomation()
+        let virtualDisplay = RecordingClamshellVirtualDisplay()
+        let sleep = RecordingClamshellSleep()
+        let displayConfiguration = RecordingClamshellDisplayConfiguration()
+        let config = DisplayConfig(width: 1920, height: 1080, hiDPI: false)
+
+        let didCreate = try automation.prepareForLidClose(
+            config: config,
+            virtualDisplay: virtualDisplay
+        )
+
+        XCTAssertTrue(didCreate)
+        XCTAssertEqual(virtualDisplay.createdConfigs, [config])
+
+        _ = try automation.lidDidClose(
+            config: config,
+            wasAppActive: false,
+            virtualDisplay: virtualDisplay,
+            sleep: sleep,
+            displayConfiguration: displayConfiguration
+        )
+
+        XCTAssertEqual(virtualDisplay.createdConfigs, [config])
+        XCTAssertEqual(automation.lidDidOpen(
+            virtualDisplay: virtualDisplay,
+            sleep: sleep,
+            displayConfiguration: displayConfiguration
+        ), false)
+        XCTAssertEqual(virtualDisplay.removeCallCount, 1)
     }
 
     func testLidCloseSavesStateAndLidOpenRestoresOriginalConfiguration() throws {
@@ -515,7 +556,7 @@ final class ClamshellAutomationTests: CaffeinatePlusTestCase {
         )
 
         XCTAssertEqual(virtualDisplay.removeCallCount, 1)
-        XCTAssertEqual(sleep.preventSleepCallCount, 1)
+        XCTAssertEqual(sleep.preventSystemSleepCallCount, 1)
         XCTAssertEqual(sleep.restoredSnapshots, [
             ClamshellSleepSnapshot(
                 preventDisplaySleep: false,
@@ -621,6 +662,9 @@ final class ClamshellPowerManagementTests: CaffeinatePlusTestCase {
         XCTAssertTrue(source.contains("try setClamshellSleepDisabled(false, connection: powerConnection)"))
         XCTAssertTrue(source.contains("IOServiceClose(powerConnection)"))
         XCTAssertTrue(source.contains("kPMSetClamshellSleepStateSelector: UInt32 = 12"))
+        XCTAssertTrue(source.contains("UInt64(disabled ? 0 : 1)"))
+        XCTAssertTrue(source.contains("verifyClamshellSleepState(disabled: disabled)"))
+        XCTAssertTrue(source.contains("expectedCausesSleep = !disabled"))
     }
 
     func testAppStatePreparesClamshellProtectionBeforeLidEvents() throws {
@@ -647,6 +691,8 @@ final class ClamshellPowerManagementTests: CaffeinatePlusTestCase {
         XCTAssertTrue(source.contains("guard automaticClamshellVirtualDisplayEnabled else"))
         XCTAssertTrue(source.contains("clamshellPowerManagement.activateAutomaticClamshellProtection()"))
         XCTAssertTrue(source.contains("clamshellPowerManagement.deactivateAutomaticClamshellProtection()"))
+        XCTAssertTrue(source.contains("clamshellAutomation.prepareForLidClose"))
+        XCTAssertTrue(source.contains("clamshellAutomation.cancelPreparedVirtualDisplay"))
         XCTAssertFalse(source.contains("power: clamshellPowerManagement"))
     }
 
@@ -713,13 +759,19 @@ private final class RecordingClamshellSleep: ClamshellSleepControlling {
         preventScreenSaver: false,
         preventAutoLock: false
     )
-    var preventSleepCallCount = 0
+    var preventSystemSleepCallCount = 0
     var restoredSnapshots: [ClamshellSleepSnapshot] = []
-    var onPreventSleep: (() -> Void)?
+    var onPreventSystemSleep: (() -> Void)?
 
-    func preventSleep() throws {
-        preventSleepCallCount += 1
-        onPreventSleep?()
+    func preventSystemSleepForClamshell() throws {
+        preventSystemSleepCallCount += 1
+        snapshot = ClamshellSleepSnapshot(
+            preventDisplaySleep: snapshot.preventDisplaySleep,
+            preventSystemSleep: true,
+            preventScreenSaver: snapshot.preventScreenSaver,
+            preventAutoLock: snapshot.preventAutoLock
+        )
+        onPreventSystemSleep?()
     }
 
     func restoreSleepState(_ snapshot: ClamshellSleepSnapshot) {

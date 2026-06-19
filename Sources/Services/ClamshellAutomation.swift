@@ -13,7 +13,7 @@ protocol ClamshellVirtualDisplayControlling: AnyObject {
 
 protocol ClamshellSleepControlling: AnyObject {
   var snapshot: ClamshellSleepSnapshot { get }
-  func preventSleep() throws
+  func preventSystemSleepForClamshell() throws
   func restoreSleepState(_ snapshot: ClamshellSleepSnapshot)
 }
 
@@ -66,6 +66,32 @@ struct ClamshellDisplaySnapshot: Equatable {
 
 final class ClamshellAutomation {
   private var session: ClamshellSession?
+  private var preparedVirtualDisplayByAutomation = false
+
+  func prepareForLidClose(
+    config: DisplayConfig,
+    virtualDisplay: ClamshellVirtualDisplayControlling
+  ) throws -> Bool {
+    guard session == nil else { return false }
+    guard !virtualDisplay.isActive else {
+      preparedVirtualDisplayByAutomation = false
+      return false
+    }
+
+    Logger.shared.info("Auto mode: preparing virtual display before lid close")
+    try virtualDisplay.createDisplay(config: config)
+    preparedVirtualDisplayByAutomation = true
+    return true
+  }
+
+  func cancelPreparedVirtualDisplay(
+    virtualDisplay: ClamshellVirtualDisplayControlling
+  ) {
+    guard preparedVirtualDisplayByAutomation else { return }
+    virtualDisplay.removeDisplay()
+    preparedVirtualDisplayByAutomation = false
+    Logger.shared.info("Auto mode: prepared virtual display removed")
+  }
 
   func lidDidClose(
     config: DisplayConfig,
@@ -81,7 +107,8 @@ final class ClamshellAutomation {
     Logger.shared.info("Auto mode: lid closed, activating...")
 
     let sleepSnapshot = sleep.snapshot
-    let shouldRemoveVirtualDisplay = !virtualDisplay.isActive
+    let preparedBeforeClose = preparedVirtualDisplayByAutomation
+    let shouldRemoveVirtualDisplay = preparedBeforeClose || !virtualDisplay.isActive
     var createdVirtualDisplay = false
 
     do {
@@ -95,8 +122,8 @@ final class ClamshellAutomation {
         throw CaffeinateError.configurationError("Virtual display ID is unavailable after creation")
       }
 
-      try sleep.preventSleep()
-      Logger.shared.info("Auto mode: sleep prevention enabled before display reconfiguration")
+      try sleep.preventSystemSleepForClamshell()
+      Logger.shared.info("Auto mode: system sleep prevention enabled before display reconfiguration")
 
       let displaySnapshot = displayConfiguration.captureDisplayConfiguration()
       Logger.shared.info(
@@ -114,14 +141,16 @@ final class ClamshellAutomation {
         sleepSnapshot: sleepSnapshot,
         displaySnapshot: displaySnapshot
       )
+      preparedVirtualDisplayByAutomation = false
 
       Logger.shared.info("Virtual display created. Sleep prevention enabled.")
       return true
     } catch {
       Logger.shared.error("Auto mode: lid close activation failed: \(error)")
-      if createdVirtualDisplay {
+      if createdVirtualDisplay || preparedBeforeClose {
         virtualDisplay.removeDisplay()
       }
+      preparedVirtualDisplayByAutomation = false
       sleep.restoreSleepState(sleepSnapshot)
       throw error
     }
@@ -175,5 +204,9 @@ extension SleepService: ClamshellSleepControlling {
     preventSystemSleep = snapshot.preventSystemSleep
     preventScreenSaver = snapshot.preventScreenSaver
     preventAutoLock = snapshot.preventAutoLock
+  }
+
+  func preventSystemSleepForClamshell() throws {
+    preventSystemSleep = true
   }
 }

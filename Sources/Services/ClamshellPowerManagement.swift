@@ -88,7 +88,7 @@ final class ClamshellPowerManagement: ClamshellPowerManaging {
   }
 
   private func setClamshellSleepDisabled(_ disabled: Bool, connection: io_connect_t) throws {
-    var input = UInt64(disabled ? 1 : 0)
+    var input = UInt64(disabled ? 0 : 1)
     var outputCount: UInt32 = 0
     let status = IOConnectCallScalarMethod(
       connection,
@@ -104,6 +104,25 @@ final class ClamshellPowerManagement: ClamshellPowerManaging {
         "Set clamshell sleep state failed: \(status)"
       )
     }
+
+    try verifyClamshellSleepState(disabled: disabled)
+  }
+
+  private func verifyClamshellSleepState(disabled: Bool) throws {
+    let expectedCausesSleep = !disabled
+
+    for _ in 0..<5 {
+      if readClamshellCausesSleep() == expectedCausesSleep {
+        return
+      }
+      Thread.sleep(forTimeInterval: 0.1)
+    }
+
+    let currentState = readClamshellCausesSleep()
+      .map { $0 ? "true" : "false" } ?? "unknown"
+    throw CaffeinateError.configurationError(
+      "Clamshell sleep state verification failed: expected AppleClamshellCausesSleep=\(expectedCausesSleep), current=\(currentState)"
+    )
   }
 
   private func readClamshellCausesSleep() -> Bool? {

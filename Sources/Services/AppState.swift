@@ -241,6 +241,7 @@ class AppState: ObservableObject {
         isActive = active
         updateActiveState()
       }
+      clamshellAutomation.cancelPreparedVirtualDisplay(virtualDisplay: virtualDisplayService)
       clamshellPowerManagement.deactivateAutomaticClamshellProtection()
     }
 
@@ -376,6 +377,15 @@ class AppState: ObservableObject {
     } catch {
       logger.error("Failed to prepare automatic clamshell protection: \(error)")
     }
+
+    do {
+      _ = try clamshellAutomation.prepareForLidClose(
+        config: displayConfig,
+        virtualDisplay: virtualDisplayService
+      )
+    } catch {
+      logger.error("Failed to prepare automatic clamshell virtual display: \(error)")
+    }
   }
 
   /// 处理合盖状态变化（对齐原始应用）
@@ -478,6 +488,7 @@ class AppState: ObservableObject {
     didShutdown = true
 
     deactivate()
+    clamshellAutomation.cancelPreparedVirtualDisplay(virtualDisplay: virtualDisplayService)
     clamshellPowerManagement.deactivateAutomaticClamshellProtection()
   }
 
