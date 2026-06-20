@@ -19,6 +19,7 @@ protocol ClamshellSleepControlling: AnyObject {
 
 protocol ClamshellDisplayConfiguring: AnyObject {
   func captureDisplayConfiguration() -> ClamshellDisplaySnapshot
+  func waitForDisplay(_ displayID: UInt32, timeout: TimeInterval) -> Bool
   func enterHeadlessMode(
     virtualDisplayID: UInt32,
     originalSnapshot: ClamshellDisplaySnapshot
@@ -119,6 +120,12 @@ final class ClamshellAutomation {
         Logger.shared.info("Auto mode: creating virtual display after lid close")
         try virtualDisplay.createDisplay(config: config)
         createdVirtualDisplayForClose = true
+      }
+
+      guard displayConfiguration.waitForDisplay(virtualDisplay.displayID, timeout: 2.0) else {
+        throw CaffeinateError.configurationError(
+          "Virtual display did not become available before display reconfiguration"
+        )
       }
 
       try sleep.preventSystemSleepForClamshell()

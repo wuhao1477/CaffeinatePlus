@@ -21,6 +21,22 @@ final class ClamshellDisplayConfiguration: ClamshellDisplayConfiguring {
     makeSnapshot()
   }
 
+  func waitForDisplay(_ displayID: UInt32, timeout: TimeInterval) -> Bool {
+    let deadline = Date().addingTimeInterval(timeout)
+
+    repeat {
+      if onlineDisplays().contains(displayID) {
+        Logger.shared.info("Virtual display is online before clamshell reconfiguration: \(displayID)")
+        return true
+      }
+
+      Thread.sleep(forTimeInterval: 0.1)
+    } while Date() < deadline
+
+    Logger.shared.error("Virtual display did not appear online before timeout: \(displayID)")
+    return false
+  }
+
   func enterHeadlessMode(
     virtualDisplayID: UInt32,
     originalSnapshot: ClamshellDisplaySnapshot
