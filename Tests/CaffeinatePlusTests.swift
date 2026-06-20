@@ -655,8 +655,10 @@ final class ClamshellDisplayConfigurationTests: CaffeinatePlusTestCase {
 
         XCTAssertTrue(source.contains("CGBeginDisplayConfiguration"))
         XCTAssertTrue(source.contains("CGCompleteDisplayConfiguration"))
+        XCTAssertTrue(source.contains("CGGetActiveDisplayList"))
         XCTAssertTrue(source.contains("configureDisplayEnabled(config, virtualDisplayID, true)"))
         XCTAssertTrue(source.contains("configureDisplayEnabled(config, display.id, false)"))
+        XCTAssertTrue(source.contains("applyHeadlessDisplayTransaction"))
         XCTAssertTrue(source.contains("CGDisplayIsBuiltin($0.id)"))
         XCTAssertTrue(source.contains("CGSConfigureDisplayEnabled"))
         XCTAssertTrue(source.contains("SLSConfigureDisplayEnabled"))

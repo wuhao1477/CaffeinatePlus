@@ -25,15 +25,15 @@ final class ClamshellDisplayConfiguration: ClamshellDisplayConfiguring {
     let deadline = Date().addingTimeInterval(timeout)
 
     repeat {
-      if onlineDisplays().contains(displayID) {
-        Logger.shared.info("Virtual display is online before clamshell reconfiguration: \(displayID)")
+      if activeDisplays().contains(displayID) || onlineDisplays().contains(displayID) {
+        Logger.shared.info("Virtual display is active before clamshell reconfiguration: \(displayID)")
         return true
       }
 
       Thread.sleep(forTimeInterval: 0.1)
     } while Date() < deadline
 
-    Logger.shared.error("Virtual display did not appear online before timeout: \(displayID)")
+    Logger.shared.error("Virtual display did not appear active before timeout: \(displayID)")
     return false
   }
 
@@ -54,7 +54,7 @@ final class ClamshellDisplayConfiguration: ClamshellDisplayConfiguring {
       "Entering clamshell headless mode: allDisplays=\(originalSnapshot.displayIDs), builtInDisplays=\(builtinDisplays.map(\.id)), virtualDisplayID=\(virtualDisplayID)"
     )
 
-    try applyDisplayTransaction { config in
+    try applyHeadlessDisplayTransaction { config in
       try configureDisplayEnabled(config, virtualDisplayID, true)
 
       for display in builtinDisplays {
@@ -107,6 +107,39 @@ final class ClamshellDisplayConfiguration: ClamshellDisplayConfiguring {
     }
 
     return Array(displays.prefix(Int(count)))
+  }
+
+  private func activeDisplays() -> [UInt32] {
+    var count: UInt32 = 0
+    guard CGGetActiveDisplayList(0, nil, &count) == .success, count > 0 else {
+      return []
+    }
+
+    var displays = [UInt32](repeating: 0, count: Int(count))
+    guard CGGetActiveDisplayList(count, &displays, &count) == .success else {
+      return []
+    }
+
+    return Array(displays.prefix(Int(count)))
+  }
+
+  private func applyHeadlessDisplayTransaction(_ configure: (CGDisplayConfigRef?) throws -> Void)
+    throws
+  {
+    var lastError: Error?
+
+    for attempt in 1...5 {
+      do {
+        try applyDisplayTransaction(configure)
+        return
+      } catch {
+        lastError = error
+        Logger.shared.warning("Headless display transaction failed, attempt \(attempt): \(error)")
+        Thread.sleep(forTimeInterval: 0.2)
+      }
+    }
+
+    throw lastError ?? CaffeinateError.configurationError("Headless display transaction failed")
   }
 
   private func applyDisplayTransaction(_ configure: (CGDisplayConfigRef?) throws -> Void) throws {
