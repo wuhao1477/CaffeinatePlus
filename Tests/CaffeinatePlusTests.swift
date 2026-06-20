@@ -94,6 +94,22 @@ final class SleepServiceTests: CaffeinatePlusTestCase {
         XCTAssertTrue(sut.preventScreenSaver)
         XCTAssertFalse(sut.preventSystemSleep)
     }
+
+    func testSystemSleepUsesForcedSleepAssertionTypeForClamshell() throws {
+        let rootURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let source = try String(
+            contentsOf: rootURL
+                .appendingPathComponent("Sources")
+                .appendingPathComponent("Services")
+                .appendingPathComponent("SleepService.swift"),
+            encoding: .utf8
+        )
+
+        XCTAssertTrue(source.contains("kIOPMAssertionTypePreventSystemSleep"))
+        XCTAssertFalse(source.contains("kIOPMAssertionTypePreventUserIdleSystemSleep"))
+    }
 }
 
 // MARK: - VirtualDisplayService Tests

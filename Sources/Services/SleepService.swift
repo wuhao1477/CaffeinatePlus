@@ -139,7 +139,7 @@ class SleepService: ObservableObject {
     guard systemAssertionID == 0 else { return }
 
     let assertionName = reason as CFString
-    let assertionType = kIOPMAssertionTypePreventUserIdleSystemSleep as CFString
+    let assertionType = kIOPMAssertionTypePreventSystemSleep as CFString
 
     let status = IOPMAssertionCreateWithName(
       assertionType,
