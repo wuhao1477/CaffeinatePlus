@@ -474,26 +474,25 @@ final class ClamshellAutomationTests: CaffeinatePlusTestCase {
         )
     }
 
-    func testLidCloseRollsBackWhenVirtualDisplayNeverAppearsOnline() throws {
+    func testLidCloseContinuesWhenVirtualDisplayNeverAppearsOnline() throws {
         let automation = ClamshellAutomation()
         let virtualDisplay = RecordingClamshellVirtualDisplay()
         let sleep = RecordingClamshellSleep()
         let displayConfiguration = RecordingClamshellDisplayConfiguration()
         displayConfiguration.onWaitForDisplay = { _ in false }
 
-        XCTAssertThrowsError(
-            try automation.lidDidClose(
-                config: DisplayConfig(width: 1920, height: 1080, hiDPI: false),
-                wasAppActive: false,
-                virtualDisplay: virtualDisplay,
-                sleep: sleep,
-                displayConfiguration: displayConfiguration
-            )
+        let shouldMarkActive = try automation.lidDidClose(
+            config: DisplayConfig(width: 1920, height: 1080, hiDPI: false),
+            wasAppActive: false,
+            virtualDisplay: virtualDisplay,
+            sleep: sleep,
+            displayConfiguration: displayConfiguration
         )
 
-        XCTAssertEqual(virtualDisplay.removeCallCount, 1)
-        XCTAssertEqual(sleep.preventSystemSleepCallCount, 0)
-        XCTAssertEqual(displayConfiguration.enteredVirtualDisplayIDs, [])
+        XCTAssertTrue(shouldMarkActive)
+        XCTAssertEqual(virtualDisplay.removeCallCount, 0)
+        XCTAssertEqual(sleep.preventSystemSleepCallCount, 1)
+        XCTAssertEqual(displayConfiguration.enteredVirtualDisplayIDs, [42])
     }
 
     func testPrepareForLidCloseCreatesVirtualDisplayBeforeClamshellEvent() throws {
@@ -598,7 +597,7 @@ final class ClamshellAutomationTests: CaffeinatePlusTestCase {
         XCTAssertEqual(virtualDisplay.removeCallCount, 0)
     }
 
-    func testLidCloseRollsBackCreatedVirtualDisplayWhenHeadlessModeFails() throws {
+    func testLidCloseKeepsSessionWhenHeadlessModeFails() throws {
         let automation = ClamshellAutomation()
         let virtualDisplay = RecordingClamshellVirtualDisplay()
         let sleep = RecordingClamshellSleep()
@@ -609,33 +608,25 @@ final class ClamshellAutomationTests: CaffeinatePlusTestCase {
             virtualDisplay: virtualDisplay
         )
 
-        XCTAssertThrowsError(
-            try automation.lidDidClose(
-                config: DisplayConfig(width: 1920, height: 1080, hiDPI: false),
-                wasAppActive: false,
-                virtualDisplay: virtualDisplay,
-                sleep: sleep,
-                displayConfiguration: displayConfiguration
-            )
+        let shouldMarkActive = try automation.lidDidClose(
+            config: DisplayConfig(width: 1920, height: 1080, hiDPI: false),
+            wasAppActive: false,
+            virtualDisplay: virtualDisplay,
+            sleep: sleep,
+            displayConfiguration: displayConfiguration
         )
 
-        XCTAssertEqual(virtualDisplay.removeCallCount, 1)
+        XCTAssertTrue(shouldMarkActive)
+        XCTAssertEqual(virtualDisplay.removeCallCount, 0)
         XCTAssertEqual(sleep.preventSystemSleepCallCount, 1)
-        XCTAssertEqual(sleep.restoredSnapshots, [
-            ClamshellSleepSnapshot(
-                preventDisplaySleep: false,
-                preventSystemSleep: false,
-                preventScreenSaver: false,
-                preventAutoLock: false
-            )
-        ])
-        XCTAssertNil(
-            automation.lidDidOpen(
-                virtualDisplay: virtualDisplay,
-                sleep: sleep,
-                displayConfiguration: displayConfiguration
-            )
-        )
+        XCTAssertEqual(sleep.restoredSnapshots, [])
+
+        XCTAssertEqual(automation.lidDidOpen(
+            virtualDisplay: virtualDisplay,
+            sleep: sleep,
+            displayConfiguration: displayConfiguration
+        ), false)
+        XCTAssertEqual(virtualDisplay.removeCallCount, 1)
     }
 }
 

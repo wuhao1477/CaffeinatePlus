@@ -122,9 +122,9 @@ final class ClamshellAutomation {
         createdVirtualDisplayForClose = true
       }
 
-      guard displayConfiguration.waitForDisplay(virtualDisplay.displayID, timeout: 2.0) else {
-        throw CaffeinateError.configurationError(
-          "Virtual display did not become available before display reconfiguration"
+      if !displayConfiguration.waitForDisplay(virtualDisplay.displayID, timeout: 2.0) {
+        Logger.shared.warning(
+          "Auto mode: virtual display was not listed before reconfiguration; continuing"
         )
       }
 
@@ -136,10 +136,14 @@ final class ClamshellAutomation {
         "Auto mode: captured displays \(displaySnapshot.displayIDs), virtualDisplayID=\(virtualDisplay.displayID)"
       )
 
-      try displayConfiguration.enterHeadlessMode(
-        virtualDisplayID: virtualDisplay.displayID,
-        originalSnapshot: displaySnapshot
-      )
+      do {
+        try displayConfiguration.enterHeadlessMode(
+          virtualDisplayID: virtualDisplay.displayID,
+          originalSnapshot: displaySnapshot
+        )
+      } catch {
+        Logger.shared.error("Auto mode: display reconfiguration failed, keeping session: \(error)")
+      }
 
       session = ClamshellSession(
         wasAppActive: preparedWasAppActive ?? wasAppActive,
